@@ -1,75 +1,71 @@
 # Long-term Memory
 
-Curated knowledge that persists across sessions. Part of the 3-layer memory architecture (hot context → searchable vault → archive). See `.claude/skills/autograph/SKILL.md` for details.
+Curated knowledge that persists across sessions. Part of the 3-layer memory architecture (hot context → searchable vault → archive).
 
 ## User Profile
 
 | Field | Value |
 |-------|-------|
-| Name | [Your name] |
-| Timezone | [Your timezone, e.g., UTC+5] |
-| Location | [City/Country] |
-| Primary language | [e.g., Russian/English] |
+| Name | Сергей Никишин |
+| Timezone | Europe/Moscow (UTC+3) |
+| Location | Москва (переезд в Краснодар — июль 2026) |
+| Primary language | Русский |
+| Age | 55 лет |
+| Work hours | 10:00–17:00, пн–пт (сб-вс выходные) |
+
+## Role
+
+Финансовый и управленческий консультант для собственников зрелого бизнеса.
+
+**Главная формулировка:**
+> Помогаю собственникам разобраться в реальной экономике бизнеса: можно ли доверять цифрам, где настоящая прибыль, что её съедает и какие решения нужно принять.
+
+**Образ:** финансист без кича. Не показывает деньги — умеет их считать.
+
+**Линейка продуктов:**
+| Продукт | Цена |
+|---|---|
+| Диагностический разбор | 40–60 тыс₽ |
+| Разбор экономики бизнеса | от 280 тыс₽ |
+| Экономика направлений + сценарии | 400–600 тыс₽+ |
+| Сопровождение | от 150 тыс₽/мес |
+
+## Active Clients (CRM)
+
+- **Цифровой Диалог** (Александр Атаманский, собственник) — активный клиент → `clients/Цифровой Диалог.md`
+- **Примабелла** — активный клиент → `clients/Примабелла.md`
+- **МирСити** — активный клиент, контракт на продлении
+- **ЛикиЛайбел** — типография, партнёр → `clients/ЛикиЛайбел.md`
+- **ЮвиЛаве** → `clients/ЮвиЛаве.md`
+- **Шен** → `clients/Шен.md`
+- **ПитЛайн** → `clients/ПитЛайн.md`
+
+## Goals 2026
+
+**Тема года:** Рост  
+**Цель:** 1.6 млн₽/мес стабильного дохода  
+**Июль 2026:** запуск Яндекс.Директ (One Big Thing), переезд в Краснодар, продлить МирСити/ЛикиЛайбел
+
+Детали: [[goals/1-yearly-2026]] · [[goals/2-monthly]] · [[goals/3-weekly]]
 
 ## Preferences
 
-### Tech Stack
-- Languages: [e.g., Python, TypeScript]
-- Frameworks: [e.g., React, FastAPI]
-- Tools: [e.g., Cursor, Claude Code]
+### Communication
+- Язык: русский
+- Стиль: деловой, кратко, без объяснений что делаешь — просто делай
+- Формат заметок: русский язык
 
-### Communication Style
-- Preferred response language: [Russian/English/Mixed]
-- Detail level: [Brief/Detailed]
-- Code comments: [Minimal/Verbose]
-
-### Habits
-- Morning routine: [if relevant]
-- Work hours: [e.g., 10:00-19:00]
-- Planning cadence: [weekly/daily]
-
-## Key Decisions
-
-| Date | Decision | Context |
-|------|----------|---------|
-| YYYY-MM-DD | Example: Use uv instead of pip | Better dependency management |
-
-## Active Context
-
-### ONE Big Thing (This Week)
-<!-- From goals/3-weekly.md -->
-- [ ] [Current week's main focus]
-
-### Hot Projects
-1. [Project name] — [status/next action]
-
-### Pipeline/Leads
-<!-- If applicable -->
-- [Lead name] — [status]
+### Work Style
+- Планирование: недельное (One Big Thing недели)
+- CRM: любое упоминание клиента → фиксировать взаимодействие в clients/
+- Команда: 1 ассистент/аналитик
 
 ## Key People
 
-| Name | Role | Contact | Notes |
-|------|------|---------|-------|
-| [Name] | [Role] | [Telegram/Email] | [Context] |
-
-## Learnings
-
-### What Worked
-- [Pattern/approach that was successful]
-
-### What Didn't Work
-- [Anti-pattern to avoid]
-
-### Rules to Remember
-- [Important rule discovered during work]
-
-## Quick Links
-
-- [[goals/3-weekly]] — Weekly focus
-- [[goals/2-monthly]] — Monthly priorities
-- [[MOC/index]] — Maps of Content
+| Name | Role | Notes |
+|------|------|-------|
+| Александр Атаманский | Собственник, Цифровой Диалог | Клиент |
 
 ---
 
-*Last updated: YYYY-MM-DD*
+*Last updated: 2026-07-18*

@@ -1,95 +1,39 @@
----
-type: monthly
-period: YYYY-MM
-updated: YYYY-MM-DD
----
+# Июль 2026
 
-# Monthly Focus
+## Приоритеты месяца
 
-## Top 3 Priorities
+### 1. Переезд в Краснодар
+**Why:** смена локации, новый этап
+**Key actions:** логистика, организация, сохранить рабочий ритм в процессе
+**Done when:** переезд завершён, работа не останавливалась
 
-### Priority 1: [Your Top Priority]
-<!-- What MUST happen this month? -->
+### 2. Продлить контракт с МирСити
+**Why:** основной клиент, устойчивость дохода
+**Key actions:** инициировать разговор, согласовать условия, подписать
+**Done when:** контракт подписан
 
-**Why it matters:** [connection to yearly goal]
+### 3. Продлить сотрудничество с ЛикиЛайбел (типография)
+**Why:** партнёр/подрядчик, нужен для текущих проектов
+**Key actions:** договориться об условиях продления
+**Done when:** договорённость зафиксирована
 
-**Key Actions:**
-- [ ] Action 1
-- [ ] Action 2
-- [ ] Action 3
+### 4. Запустить контент-завод
+**Why:** системный контент в Telegram без ручной работы каждый день
+**Key actions:** составить контент-план на июль, настроить автоматизацию
+**Done when:** план составлен, процесс запущен, первые посты идут по расписанию
 
-**Definition of Done:** [clear outcome]
+### 5. План на сентябрь в Москве
+**Why:** подготовка к деловому сезону, встречи и мероприятия
+**Key actions:** найти мероприятия, составить план поездки
+**Done when:** есть конкретный план на сентябрь
 
----
+## Финансовая цель
+_Не зафиксирована_
 
-### Priority 2: [Second Priority]
+## Ключевые клиенты в работе
+- МирСити — продление контракта
+- Примабелла, ЮвиЛаве, Шен, ПитЛайн — текущие проекты
+- Цифровой Диалог (Атаманский) — развитие
 
-**Why it matters:** [connection to yearly goal]
-
-**Key Actions:**
-- [ ] Action 1
-- [ ] Action 2
-- [ ] Action 3
-
-**Definition of Done:** [clear outcome]
-
----
-
-### Priority 3: [Third Priority]
-
-**Why it matters:** [connection to yearly goal]
-
-**Key Actions:**
-- [ ] Action 1
-- [ ] Action 2
-- [ ] Action 3
-
-**Definition of Done:** [clear outcome]
-
----
-
-## NOT Doing This Month
-
-<!-- What are you consciously saying NO to? -->
--
--
--
-
----
-
-## Weekly Check-ins
-
-| Week | Progress | Blockers | Adjustments |
-|------|----------|----------|-------------|
-| W1 | | | |
-| W2 | | | |
-| W3 | | | |
-| W4 | | | |
-
----
-
-## End of Month Review
-
-**What worked:**
--
-
-**What didn't work:**
--
-
-**Key learnings:**
--
-
-**Next month focus:**
--
-
----
-
-## Links
-
-- [[0-vision-3y]] - 3-year vision
-- [[1-yearly-2025]] - Annual goals
-- [[3-weekly]] - This week's plan
-
----
-
-*Next Review: End of month*
+## Не делаю в июле
+_Не определено_
