@@ -1,7 +1,6 @@
 ---
 type: crm
-description: >-
-  [One-line summary: industry, key deal, what makes this client notable]
+description: "[One-line summary: industry, key deal, what makes this client notable]"
 tags: [industry, region, deal-type]
 status: prospect
 industry: [FMCG|Electronics|Banks|Pharma|Retail|Auto|IT|Telecom]
@@ -12,6 +11,8 @@ deal_status: [In Progress|Tender|Proposal Sent]
 deal_deadline: YYYY-MM-DD
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
+relevance: 0.1
+tier: archive
 ---
 
 # [Company Name]

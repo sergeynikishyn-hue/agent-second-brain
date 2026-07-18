@@ -1,20 +1,14 @@
 ---
 title: "Consumer AI в 2030: семь прогнозов, которые изменят рынок"
 excerpt: "Почему устройства без экранов провалятся, куда движется рынок AI-чатботов и что станет самым быстрорастущим AI-продуктом."
-category: "Аналитика"
-publishedAt: "2026-01-08"
+category: Аналитика
+publishedAt: 2026-01-08
 readingTime: 7
-image: "/blog/placeholder.webp"
-tags:
-  - Consumer AI
-  - AI-чатботы
-  - Корпоративное обучение AI
-  - Внедрение AI в бизнес
-  - Тренды AI 2030
-author:
-  name: "Сергей Шима"
-  role: "Chief AI Officer, TDI Group"
-  image: "/shima.webp"
+image: /blog/placeholder.webp
+tags: [Consumer AI, AI-чатботы, Корпоративное обучение AI, Внедрение AI в бизнес, Тренды AI 2030]
+author: "name: \"Сергей Шима\" role: \"Chief AI Officer, TDI Group\" image: \"/shima.webp\""
+relevance: 0.1
+tier: archive
 ---
 
 На корпоративных тренингах по AI один из главных вопросов: куда всё это движется? Компании хотят понимать, какие технологии внедрять сейчас, а какие - подождать. Разберу семь прогнозов о consumer AI до 2030 года, которые стоит учитывать при внедрении AI в бизнес.
