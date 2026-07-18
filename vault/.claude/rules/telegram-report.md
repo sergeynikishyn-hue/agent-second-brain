@@ -53,7 +53,13 @@ The output goes directly to Telegram `parse_mode=HTML`. Any markdown syntax will
 • {task_name} <i>({priority}, {due_date})</i>
 
 <b>📅 Загрузка на неделю:</b>
-Пн: {n} | Вт: {n} | Ср: {n} | Чт: {n} | Пт: {n} | Сб: {n} | Вс: {n}
+Пн: {n}
+Вт: {n}
+Ср: {n}
+Чт: {n}
+Пт: {n}
+Сб: {n}
+Вс: {n}
 
 <b>⚠️ Требует внимания:</b>
 • {count} просроченных задач
