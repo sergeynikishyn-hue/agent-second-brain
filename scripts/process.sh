@@ -92,8 +92,9 @@ echo "=== pipeline output ==="
 echo "$REPORT"
 echo "======================="
 
-# Remove HTML comments (break Telegram HTML parser)
-REPORT_CLEAN=$(echo "$REPORT" | sed '/<!--/,/-->/d')
+# Remove HTML comments and unsupported Telegram tags (hr, div, span, etc.)
+# Telegram HTML supports only: b, i, code, s, u, a, pre, blockquote, tg-spoiler
+REPORT_CLEAN=$(echo "$REPORT" | sed '/<!--/,/-->/d' | sed 's|<hr[^>]*>|\n|gI' | sed 's|</\?div[^>]*>||gI' | sed 's|</\?span[^>]*>||gI')
 
 # Rebuild vault graph (keeps structure up to date)
 echo "=== Rebuilding vault graph ==="
