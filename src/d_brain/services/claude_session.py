@@ -268,6 +268,13 @@ class ClaudeSession:
                 self._ready_flag.write_text("ready\n")
                 logger.info("Claude session %s is ready", self.session_name)
                 return
+            # Fail fast: auth lost or theme-selector on fresh config — no
+            # amount of waiting will fix this without manual dbrain login.
+            if state == PaneState.LOGGED_OUT:
+                raise RuntimeError(
+                    f"logged_out: session {self.session_name} requires re-login "
+                    "(run: dbrain login)"
+                )
             last_state = state
             self._sleep(self._poll_interval)
         raise RuntimeError(
@@ -435,6 +442,8 @@ class ClaudeSession:
             except Exception as exc:  # noqa: BLE001 — must never escape ask()
                 logger.error("ensure_session failed for %s: %s", log_id, exc)
                 self._inflight.unlink(missing_ok=True)
+                if str(exc).startswith("logged_out:"):
+                    return AskResult("logged_out", detail=str(exc))
                 return AskResult("error", detail=f"session start failed: {exc}")
 
             pre = classify_state(self._capture())

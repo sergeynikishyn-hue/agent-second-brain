@@ -66,6 +66,7 @@ def _build_session(
         mcp_config=mcp if mcp.exists() else None,
         system_prompt_file=brain_prompt,
         model=settings.claude_model or None,
+        startup_timeout=120.0,
     )
 
 
