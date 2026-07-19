@@ -39,6 +39,7 @@ Curated knowledge that persists across sessions. Part of the 3-layer memory arch
 - **ЮвиЛаве** → `clients/ЮвиЛаве.md`
 - **Шен** → `clients/Шен.md`
 - **ПитЛайн** → `clients/ПитЛайн.md`
+- **АллоХа** — клиент, счёт+отчёт до 20.07 → `clients/АллоХа.md`
 
 ## Goals 2026
 
