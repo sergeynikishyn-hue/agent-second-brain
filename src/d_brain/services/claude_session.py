@@ -487,6 +487,10 @@ class ClaudeSession:
                     self._sleep(self._poll_interval)
                     continue
                 else:
+                    if _rate_limited_since is not None:
+                        # Just recovered from rate-limited: reset stall timer
+                        # so Claude gets a full window to resume after credits.
+                        last_active = self._clock()
                     _rate_limited_since = None
                 if state == PaneState.LOGGED_OUT:
                     self._inflight.unlink(missing_ok=True)
@@ -523,6 +527,11 @@ class ClaudeSession:
                     last_active = self._clock()
                 last_log_size = log_size
                 if self._clock() - last_active > self._stall_timeout:
+                    # Last-chance check: Claude may have finished while pane.log
+                    # was quiet (e.g. rate-limit overlay suppressed output).
+                    if wrap and is_complete(cap, rid):
+                        self._inflight.unlink(missing_ok=True)
+                        return AskResult("ok", reply=extract_reply(cap, rid))
                     self._interrupt()
                     # leave inflight as an orphan/stuck signal for the watchdog
                     return AskResult("error", detail="session stalled (no active turn)")
