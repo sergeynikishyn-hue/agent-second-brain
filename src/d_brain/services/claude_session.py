@@ -468,12 +468,26 @@ class ClaudeSession:
             last_log_size = self._pane_log_size()
             deadline = self._clock() + timeout
             idle_streak = 0
+            _rate_limited_since: float | None = None
+            # Grace period before giving up on a rate-limited mid-turn.
+            # Subscription credits (extra pay) kick in within seconds, so a
+            # brief wait avoids a false "rate limited" when the banner appears
+            # momentarily and Claude self-recovers.
+            _RATE_GRACE = 45.0
             while self._clock() < deadline:
                 cap = self._capture()
                 state = classify_state(cap)
                 if state == PaneState.RATE_LIMITED:
-                    self._inflight.unlink(missing_ok=True)
-                    return AskResult("rate_limited")
+                    if _rate_limited_since is None:
+                        _rate_limited_since = self._clock()
+                        logger.info("rate_limited detected mid-turn, waiting grace period")
+                    elif self._clock() - _rate_limited_since > _RATE_GRACE:
+                        self._inflight.unlink(missing_ok=True)
+                        return AskResult("rate_limited")
+                    self._sleep(self._poll_interval)
+                    continue
+                else:
+                    _rate_limited_since = None
                 if state == PaneState.LOGGED_OUT:
                     self._inflight.unlink(missing_ok=True)
                     return AskResult("logged_out")
