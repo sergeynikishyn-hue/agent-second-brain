@@ -448,8 +448,16 @@ class ClaudeSession:
 
             pre = classify_state(self._capture())
             if pre == PaneState.RATE_LIMITED:
-                self._inflight.unlink(missing_ok=True)
-                return AskResult("rate_limited")
+                # The rate-limit banner can stay in the pane after the limit
+                # resets (nothing clears it until a new prompt is sent). Try
+                # pressing Escape once to dismiss it, wait 2s, re-classify.
+                # If still RATE_LIMITED it's genuine; otherwise proceed.
+                self._tmux("send-keys", "-t", self._target, "Escape")
+                self._sleep(2.0)
+                pre = classify_state(self._capture())
+                if pre == PaneState.RATE_LIMITED:
+                    self._inflight.unlink(missing_ok=True)
+                    return AskResult("rate_limited")
             if pre == PaneState.LOGGED_OUT:
                 self._inflight.unlink(missing_ok=True)
                 return AskResult("logged_out")
