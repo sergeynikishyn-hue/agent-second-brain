@@ -86,7 +86,10 @@ echo "ORIENT: daily=$DAILY_SIZE bytes, handoff=OK, graph=OK"
 # which stays on the subscription. The Python entrypoint runs the daily
 # processing through the shared session and prints the HTML report.
 echo "=== Daily processing (interactive session) ==="
-REPORT=$(cd "$PROJECT_DIR" && uv run python -m d_brain.pipeline daily 2>&1) || true
+# stderr is kept OUT of $REPORT (goes to this script's own stderr, captured
+# by journald) — merging it in (2>&1) used to let Python logging noise leak
+# into the text sent to Telegram.
+REPORT=$(cd "$PROJECT_DIR" && uv run python -m d_brain.pipeline daily) || true
 
 echo "=== pipeline output ==="
 echo "$REPORT"
@@ -114,17 +117,36 @@ git push || true
 # Send to Telegram
 if [ -n "$REPORT_CLEAN" ] && [ -n "$CHAT_ID" ]; then
     echo "=== Sending to Telegram ==="
-    RESULT=$(curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
+    # Success is judged by "ok":true, not the absence of "ok":false — a
+    # network blip/timeout leaves $RESULT empty, which contains neither
+    # substring and used to be silently treated as success.
+    RESULT=$(curl -s --max-time 20 -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
         -d "chat_id=$CHAT_ID" \
         -d "text=$REPORT_CLEAN" \
         -d "parse_mode=HTML")
+    echo "Telegram response: ${RESULT:-<empty — curl failed or timed out>}"
 
-    # If HTML failed, send without formatting
-    if echo "$RESULT" | grep -q '"ok":false'; then
-        echo "HTML failed: $RESULT"
-        curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
+    if ! echo "$RESULT" | grep -q '"ok":true'; then
+        echo "Send failed, retrying once after 3s..."
+        sleep 3
+        RESULT=$(curl -s --max-time 20 -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
             -d "chat_id=$CHAT_ID" \
-            -d "text=$REPORT_CLEAN"
+            -d "text=$REPORT_CLEAN" \
+            -d "parse_mode=HTML")
+        echo "Telegram retry response: ${RESULT:-<empty — curl failed or timed out>}"
+    fi
+
+    # If HTML still failing (e.g. malformed markup), fall back to plain text
+    if ! echo "$RESULT" | grep -q '"ok":true'; then
+        echo "HTML send failed: $RESULT"
+        RESULT=$(curl -s --max-time 20 -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
+            -d "chat_id=$CHAT_ID" \
+            -d "text=$REPORT_CLEAN")
+        echo "Telegram plain-text response: ${RESULT:-<empty — curl failed or timed out>}"
+    fi
+
+    if ! echo "$RESULT" | grep -q '"ok":true'; then
+        echo "ERROR: Telegram delivery failed after retries: $RESULT"
     fi
 fi
 
