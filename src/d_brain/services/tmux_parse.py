@@ -140,7 +140,13 @@ _STARTING_RE = re.compile(r"Claude Code v\d", re.I)
 # "✢ Razzle-dazzling… (44s · ↓1.8k tokens)". Newer Claude Code dropped the
 # hint entirely, so matching only the old string blinded the stall detector
 # and false-killed every turn longer than stall_timeout.
-_WORKING_RE = re.compile(r"esc to interrupt|\(\d+s\s*·")
+# Elapsed time switches from "Ns" to "Xm Ys" once a turn runs a minute or
+# longer (VERIFIED LIVE: "(2m 41s · ↓ 9.5k tokens · thought for 21s)") — the
+# original `\(\d+s` required digits directly after "(", so it stopped
+# matching on exactly the long, tool-heavy turns (like daily processing)
+# most likely to actually run past stall_timeout, causing spurious
+# "session stalled" errors despite the session being fully alive.
+_WORKING_RE = re.compile(r"esc to interrupt|\((?:\d+m\s*)?\d+s\s*·")
 # Idle = a BARE ❯ on its own line (empty input). A menu selector ("❯ 1. Yes…")
 # has text after the chevron and must NOT count — otherwise a turn stuck on an
 # approval/menu prompt would be mistaken for completion (wrap=False).
