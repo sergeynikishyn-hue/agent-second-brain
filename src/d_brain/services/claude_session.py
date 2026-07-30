@@ -411,6 +411,7 @@ class ClaudeSession:
         prompt: str,
         *,
         timeout: float = DEFAULT_TIMEOUT,
+        stall_timeout: float | None = None,
         request_id: str | None = None,
         wrap: bool = True,
     ) -> AskResult:
@@ -464,6 +465,7 @@ class ClaudeSession:
 
             self._send_prompt(prompt, rid, wrap=wrap)
 
+            effective_stall = stall_timeout if stall_timeout is not None else self._stall_timeout
             last_active = self._clock()
             last_log_size = self._pane_log_size()
             deadline = self._clock() + timeout
@@ -526,7 +528,7 @@ class ClaudeSession:
                 if is_working(cap) or log_size > last_log_size:
                     last_active = self._clock()
                 last_log_size = log_size
-                if self._clock() - last_active > self._stall_timeout:
+                if self._clock() - last_active > effective_stall:
                     # Last-chance check: Claude may have finished while pane.log
                     # was quiet (e.g. rate-limit overlay suppressed output).
                     if wrap and is_complete(cap, rid):

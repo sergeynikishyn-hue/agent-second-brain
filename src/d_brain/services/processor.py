@@ -56,7 +56,7 @@ class ClaudeProcessor:
         # pipeline turn (see ClaudeSession.is_steerable_turn).
         return self._to_report(
             self.session.ask(
-                prompt, timeout=DEFAULT_TIMEOUT, wrap=wrap,
+                prompt, timeout=DEFAULT_TIMEOUT, stall_timeout=480.0, wrap=wrap,
                 request_id="maint-process",
             )
         )
