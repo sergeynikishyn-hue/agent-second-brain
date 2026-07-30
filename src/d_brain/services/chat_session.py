@@ -44,7 +44,7 @@ class ChatSessionManager:
         worker thread so the event loop stays responsive.
         """
         async with get_ask_lock():
-            res = await asyncio.to_thread(self._session.ask, prompt)
+            res = await asyncio.to_thread(self._session.ask, prompt, stall_timeout=480.0)
         if res.ok:
             return res.reply or ""
         logger.warning("session ask for user %d returned %s", user_id, res.status)
