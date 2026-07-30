@@ -48,7 +48,7 @@ logger = logging.getLogger(__name__)
 Runner = Callable[..., subprocess.CompletedProcess]
 
 DEFAULT_TIMEOUT = 1200  # 20 min, matches the old subprocess pipeline
-DEFAULT_STALL_TIMEOUT = 180  # no new pane bytes for this long ⇒ wedged
+DEFAULT_STALL_TIMEOUT = 300  # no new pane bytes for this long ⇒ wedged
 # request_id prefix that marks a turn as maintenance (pipeline, doctor,
 # /process) — such turns are never steering targets for chat input.
 MAINT_PREFIX = "maint-"
