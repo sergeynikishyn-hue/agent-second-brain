@@ -471,11 +471,16 @@ class ClaudeSession:
             deadline = self._clock() + timeout
             idle_streak = 0
             _rate_limited_since: float | None = None
+            _recovered_from_rate_limit = False
             # Grace period before giving up on a rate-limited mid-turn.
             # Subscription credits (extra pay) kick in within seconds, so a
             # brief wait avoids a false "rate limited" when the banner appears
             # momentarily and Claude self-recovers.
             _RATE_GRACE = 45.0
+            # After rate-limit clears, Claude Code may sit silent for several
+            # minutes before producing any output (no spinner, no log growth).
+            # Give it a longer post-recovery stall window instead of the default.
+            _POST_RATE_LIMIT_STALL = 600.0
             while self._clock() < deadline:
                 cap = self._capture()
                 state = classify_state(cap)
@@ -491,8 +496,10 @@ class ClaudeSession:
                 else:
                     if _rate_limited_since is not None:
                         # Just recovered from rate-limited: reset stall timer
-                        # so Claude gets a full window to resume after credits.
+                        # and flag that we should use the extended post-recovery window.
                         last_active = self._clock()
+                        _recovered_from_rate_limit = True
+                        logger.info("rate_limited cleared, using extended stall window (%ss)", _POST_RATE_LIMIT_STALL)
                     _rate_limited_since = None
                 if state == PaneState.LOGGED_OUT:
                     self._inflight.unlink(missing_ok=True)
@@ -528,7 +535,8 @@ class ClaudeSession:
                 if is_working(cap) or log_size > last_log_size:
                     last_active = self._clock()
                 last_log_size = log_size
-                if self._clock() - last_active > effective_stall:
+                current_stall = _POST_RATE_LIMIT_STALL if _recovered_from_rate_limit else effective_stall
+                if self._clock() - last_active > current_stall:
                     # Last-chance check: Claude may have finished while pane.log
                     # was quiet (e.g. rate-limit overlay suppressed output).
                     if wrap and is_complete(cap, rid):
