@@ -77,6 +77,7 @@ Curated knowledge that persists across sessions. Part of the 3-layer memory arch
 | 2026-07-25 | d-brain перенесён на новый сервер (`ubuntu-4gb-fsn1-2`) | Переезд/миграция инфраструктуры | Отчёт 21:00 не пришёл: systemd user-таймер `dbrain-process.timer` был enabled, но не запущен (юнит-файлы скопированы без daemon-reload/старта). Исправлено вручную (daemon-reload + start) — с 26.07 отчёт снова идёт штатно. При будущих миграциях сервера проверять `systemctl --user list-timers` сразу после переноса |
 | 2026-07-28 | Новый продукт «Деньги под контроль» запущен в проработку — заводится в новую воронку CRM | Расширение продуктовой линейки | Пока без деталей цены/формата в вault; отслеживать в [[thoughts/tasks/dengi-pod-kontrolem-voronka-crm]] и [[thoughts/tasks/dengi-pod-kontrolem-reklama]] |
 | 2026-07-30 | Новый сайт запущен | One Big Thing недели (с 27.07) | Основная задача закрыта; остаются 3 полировочных подзадачи (фото «о себе», проверка «кейсов», дизайн в чате) → [[thoughts/tasks/perepisat-zapustit-sayt]] |
+| 2026-07-31 | Second Brain будем организовывать на VPS-сервере (не Google Диск) | Решение пользователя | Задача «перенести Obsidian → Google Диск» снята (status: inactive) → [[thoughts/tasks/perenesti-obsidian-google-disk]]. Детали переноса на VPS пока не описаны — уточнить при следующем движении по инфраструктуре |
 
 ---
 
