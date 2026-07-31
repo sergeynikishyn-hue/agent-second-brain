@@ -54,9 +54,20 @@ class ClaudeProcessor:
             return {"error": "session not configured", "processed_entries": 0}
         # maint- tag: chat steering must never inject user text into a
         # pipeline turn (see ClaudeSession.is_steerable_turn).
+        # stall_timeout=900: process.sh force-recovers a FRESH tmux session
+        # right before every pipeline run (to avoid rate-limiting from
+        # accumulated pane history), which means every daily run also pays
+        # for cold MCP/connector reconnection (Gmail, Calendar, Drive, Slack,
+        # etc.) before the turn even starts — no spinner is shown during that
+        # wait, so it silently eats into the stall budget. 480s (2026-07-29
+        # fix, 325fb35) was enough for tool-heavy turns alone but not for
+        # reconnect-wait + a long multi-file processing turn together: the
+        # 2026-07-31 run genuinely worked the whole time (~11.5 min) yet was
+        # false-killed at the 480s mark. Chat turns reuse an already-warm
+        # session (no reconnect), so chat_session.py keeps 480s.
         return self._to_report(
             self.session.ask(
-                prompt, timeout=DEFAULT_TIMEOUT, stall_timeout=480.0, wrap=wrap,
+                prompt, timeout=DEFAULT_TIMEOUT, stall_timeout=900.0, wrap=wrap,
                 request_id="maint-process",
             )
         )
