@@ -26,6 +26,12 @@ _STATUS_MESSAGES = {
     "error": "❌ <b>Ошибка сессии.</b> Попробуйте позже.",
 }
 
+# error/timeout are frequently transient (false stall-kill, one-off network
+# blip) — worth one immediate retry before giving up. rate_limited and
+# logged_out are not: retrying instantly can't fix a real quota limit or a
+# session that needs a human to run `dbrain login`, so don't waste the retry.
+_RETRYABLE_STATUSES = {"error", "timeout"}
+
 
 class ClaudeProcessor:
     """Builds prompts and runs them through the shared ClaudeSession."""
@@ -65,12 +71,19 @@ class ClaudeProcessor:
         # 2026-07-31 run genuinely worked the whole time (~11.5 min) yet was
         # false-killed at the 480s mark. Chat turns reuse an already-warm
         # session (no reconnect), so chat_session.py keeps 480s.
-        return self._to_report(
-            self.session.ask(
-                prompt, timeout=DEFAULT_TIMEOUT, stall_timeout=900.0, wrap=wrap,
-                request_id="maint-process",
-            )
+        res = self.session.ask(
+            prompt, timeout=DEFAULT_TIMEOUT, stall_timeout=900.0, wrap=wrap,
+            request_id="maint-process",
         )
+        if not res.ok and res.status in _RETRYABLE_STATUSES:
+            logger.warning(
+                "pipeline ask() returned %s, retrying once before giving up", res.status
+            )
+            res = self.session.ask(
+                prompt, timeout=DEFAULT_TIMEOUT, stall_timeout=900.0, wrap=wrap,
+                request_id="maint-process-retry",
+            )
+        return self._to_report(res)
 
     # ── content helpers (unchanged) ──────────────────────────────────
 
