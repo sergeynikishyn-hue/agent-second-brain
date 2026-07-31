@@ -80,6 +80,21 @@ fi
 echo "ORIENT: daily=$DAILY_SIZE bytes, handoff=OK, graph=OK"
 # ── END ORIENT PHASE ──
 
+# ── PRE-PROCESS: reset accumulated session context ──
+# After days of chat and pipeline runs the tmux session accumulates up to
+# 14 MB of pane history, causing immediate Anthropic rate-limiting (< 10 s)
+# every time the pipeline sends its first prompt. A fresh session has zero
+# context overhead and doesn't hit rate limits. Skip cleanly if a live chat
+# request is holding the session lock.
+echo "=== Resetting session context before processing ==="
+cd "$PROJECT_DIR" && uv run python -c "
+from d_brain.config import get_settings
+from d_brain.services.runtime import get_session
+s = get_session(get_settings())
+result = s.force_recover()
+print('Session reset:', 'ok — fresh session ready' if result else 'skipped (chat in progress, using existing session)')
+" || echo "Session reset failed (continuing with existing session)"
+
 # ── PROCESS via the persistent interactive session (NO claude -p) ──
 # The 3-phase claude -p pipeline is gone: after 2026-06-15 that bills against
 # the Agent SDK credit. We drive the long-lived interactive session instead,
