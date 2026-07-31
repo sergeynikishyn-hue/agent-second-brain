@@ -78,7 +78,8 @@ Curated knowledge that persists across sessions. Part of the 3-layer memory arch
 | 2026-07-28 | Новый продукт «Деньги под контроль» запущен в проработку — заводится в новую воронку CRM | Расширение продуктовой линейки | Пока без деталей цены/формата в вault; отслеживать в [[thoughts/tasks/dengi-pod-kontrolem-voronka-crm]] и [[thoughts/tasks/dengi-pod-kontrolem-reklama]] |
 | 2026-07-30 | Новый сайт запущен | One Big Thing недели (с 27.07) | Основная задача закрыта; остаются 3 полировочных подзадачи (фото «о себе», проверка «кейсов», дизайн в чате) → [[thoughts/tasks/perepisat-zapustit-sayt]] |
 | 2026-07-31 | Second Brain будем организовывать на VPS-сервере (не Google Диск) | Решение пользователя | Задача «перенести Obsidian → Google Диск» снята (status: inactive) → [[thoughts/tasks/perenesti-obsidian-google-disk]]. Детали переноса на VPS пока не описаны — уточнить при следующем движении по инфраструктуре |
+| 2026-07-31 | Новый One Big Thing недели (с 03.08): обновить шаблоны для раздаточных материалов сайта | Решение пользователя, ротация goals/3-weekly.md | [[goals/3-weekly]] переписан под новую неделю; задача [[thoughts/tasks/sayt-obnovit-shablony-razdatka]] поднята из полировочной подзадачи сайта до OBT |
 
 ---
 
-*Last updated: 2026-07-30*
+*Last updated: 2026-07-31*
