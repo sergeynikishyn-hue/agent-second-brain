@@ -89,4 +89,4 @@ Curated knowledge that persists across sessions. Part of the 3-layer memory arch
 
 ---
 
-*Last updated: 2026-07-31*
+*Last updated: 2026-08-01*
