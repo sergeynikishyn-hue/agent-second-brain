@@ -29,7 +29,7 @@ Curated knowledge that persists across sessions. Part of the 3-layer memory arch
 | Разбор экономики бизнеса | от 280 тыс₽ |
 | Экономика направлений + сценарии | 400–600 тыс₽+ |
 | Сопровождение | от 150 тыс₽/мес |
-| Управленческий учёт (ДДС/ОПиУ/баланс) | от 50 тыс₽/мес (якорь), финал после звонка — шаблон ответа: [[thoughts/ideas/2026-08-01-shablon-otvet-vhodyaschy-lid-upravl-uchet]] |
+| Управленческий учёт (ДДС/ОПиУ/баланс) | от 50 тыс₽/мес (якорь), финал после звонка — 1-е сообщение (без цены): [[thoughts/ideas/2026-08-02-shablon-privetstvie-vhodyaschy-lid]], 2-е сообщение (с контекстом): [[thoughts/ideas/2026-08-01-shablon-otvet-vhodyaschy-lid-upravl-uchet]] |
 
 ## Active Clients (CRM)
 
