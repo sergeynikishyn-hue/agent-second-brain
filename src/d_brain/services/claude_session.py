@@ -389,28 +389,51 @@ class ClaudeSession:
         self._tmux("paste-buffer", "-t", self._target, "-b", buf, "-d")
         self._sleep(self._paste_settle)
 
-    def _submit(self) -> None:
-        # A lone Enter right after a paste can be swallowed while the TUI is
-        # still settling (seen in production: the prompt sits in the input box
-        # forever and ask() burns its whole timeout). Submission is observable:
-        # pane.log grows when the turn starts. Verify that, and retry Enter a
-        # couple of times — an extra Enter on an empty input is a no-op, so
-        # retrying is safe even if the first one did land.
-        base = self._pane_log_size()
-        for _ in range(3):
+    def _draft_in_input_box(self, head: str) -> bool:
+        """True while the typed draft still sits in the input box.
+
+        The input box is the LAST '❯'-prefixed line on screen. After a real
+        submission that line is either gone (spinner phase) or an empty
+        prompt; the submitted echo of the same text lands ABOVE it in the
+        transcript, so matching only the last '❯' line distinguishes the two.
+        """
+        last = None
+        for line in self._capture().splitlines():
+            s = line.strip()
+            if s.startswith("❯"):
+                last = s
+        return last is not None and head in last
+
+    def _submit(self, head: str) -> None:
+        # A lone Enter after a paste is sometimes swallowed by the TUI (seen
+        # in production twice: the draft sits in the input box forever and
+        # ask() burns its whole timeout). pane.log growth is NOT a reliable
+        # signal — the paste echo flushes late and both masks a lost Enter
+        # and mimics one. The ground truth is the input box itself: verify
+        # the draft left it, retry Enter while it hasn't. An extra Enter on
+        # an empty input is a no-op, so over-retrying is safe.
+        for _ in range(4):
             self._send_enter()
             for _ in range(6):
                 self._sleep(0.5)
-                if self._pane_log_size() > base:
+                if not self._draft_in_input_box(head):
                     return
-        logger.warning("prompt may not have submitted (pane.log did not grow)")
+        logger.warning("prompt did not leave the input box after retries")
+
+    @staticmethod
+    def _head_of(text: str) -> str:
+        for line in text.splitlines():
+            line = line.strip()
+            if line:
+                return line[:30]
+        return ""
 
     def _send_prompt(self, prompt: str, rid: str, *, wrap: bool = True) -> None:
         # Markers are written INLINE (mid-sentence) so the input echo never
         # forms a line-anchored pair; only the model's answer does.
         if not wrap:
             self._send_text(prompt)
-            self._submit()
+            self._submit(self._head_of(prompt))
             return
         payload = (
             f"{prompt}\n\n"
@@ -418,7 +441,7 @@ class ClaudeSession:
             f"<<<R:{rid}>>> and a line containing only <<<E:{rid}>>>."
         )
         self._send_text(payload)
-        self._submit()
+        self._submit(self._head_of(prompt))
 
     # ── ask ──────────────────────────────────────────────────────────
 

@@ -536,8 +536,11 @@ def test_ask_dismisses_feedback_survey_instead_of_stalling(tmp_path, clock):
         "● How is Claude doing this session? (optional)\n"
         "  1: Bad    2: Fine   3: Good   0: Dismiss\n" + READY
     )
+    # Two survey frames: _submit()'s draft-left check consumes one capture
+    # before the ask loop starts polling (the real pane is not consumable,
+    # only the scripted fake is).
     fake = FakeTmux(
-        [READY, survey, THINKING, _complete("rid00001")], exists=True
+        [READY, survey, survey, THINKING, _complete("rid00001")], exists=True
     )
     s = make_session(tmp_path, fake, clock)
     res = s.ask("привет")
