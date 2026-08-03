@@ -14,7 +14,7 @@
 - МирСити: проверить ответ Алёны, если нет — письмо-напоминалка (05.08) → [[thoughts/tasks/mirsiti-napominalka-alena]]
 
 ## 📅 Встречи
-- Пн 03.08, 10:00 — созвон с Романом (лид, управленческий учёт) → [[thoughts/tasks/roman-svyazatsya-upravlenchesky-uchet]]
+- ~~Пн 03.08, 10:00~~ — созвон с Романом отменён (лид написал 09:18, не смог), новое время не назначено → [[thoughts/tasks/roman-svyazatsya-upravlenchesky-uchet]]
 
 ## 🚫 Не делаю на этой неделе
 _Не определено_
