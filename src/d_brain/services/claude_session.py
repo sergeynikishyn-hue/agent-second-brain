@@ -23,6 +23,7 @@ on NFS/9p and would silently degrade to no serialization.
 import fcntl
 import logging
 import os
+import re
 import shlex
 import subprocess
 import time
@@ -69,6 +70,15 @@ _CAPTURE_SCROLLBACK = "-200"
 # Classification stays on the narrow window — old dismissed menus deep in
 # history must not re-trigger state matches.
 _EXTRACT_SCROLLBACK = "-1000"
+# OSC (…BEL / …ST), two-byte ESC sequences, and CSI — enough to turn the raw
+# pane transcript back into readable text for marker matching.
+_ANSI_RE = re.compile(
+    rb"\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)|\x1b[@-Z\\-_]|\x1b\[[0-?]*[ -/]*[@-~]"
+)
+# The TUI separates words by MOVING the cursor (CHA/CUF) instead of emitting
+# spaces, so stripping every escape glues the text together ("Активныезадачи").
+# Collapse forward-motion to a single space before the general strip.
+_ANSI_ADVANCE_RE = re.compile(rb"\x1b\[[0-9]*[GC]")
 
 
 @dataclass
@@ -176,6 +186,28 @@ class ClaudeSession:
             return self._pane_log.stat().st_size
         except OSError:
             return 0
+
+    def _pane_log_text(self, since: int) -> str:
+        """Plain text the pane emitted since byte offset ``since``.
+
+        capture-pane returns the RENDERED screen, and that screen goes stale:
+        the TUI repaints regions lazily, so a finished answer (and even the
+        input line) can show content from an earlier moment — completion is
+        then never observed and the turn dies on the stall timeout. The piped
+        transcript is append-only and cannot go stale, so completion is read
+        from here instead. Reading from the turn's own start offset keeps
+        earlier turns' markers out of scope.
+        """
+        try:
+            with open(self._pane_log, "rb") as fh:
+                fh.seek(since)
+                raw = fh.read()
+        except OSError:
+            return ""
+        text = _ANSI_RE.sub(b"", _ANSI_ADVANCE_RE.sub(b" ", raw)).decode(
+            "utf-8", "replace"
+        )
+        return text.replace("\r\n", "\n").replace("\r", "\n")
 
     def _session_exists(self) -> bool:
         return self._tmux("has-session", "-t", self.session_name).returncode == 0
@@ -399,40 +431,37 @@ class ClaudeSession:
         self._tmux("paste-buffer", "-t", self._target, "-b", buf, "-d")
         self._sleep(self._paste_settle)
 
-    def _input_box_holds_draft(self) -> bool:
-        """True while ANY draft sits in the input box.
+    def _completed_reply(self, rid: str, log_start: int) -> str | None:
+        """The finished answer for ``rid``, or None while it is not done.
 
-        The input box is the LAST '❯'-prefixed line on screen; it stays
-        visible during a turn, so an empty box — not the spinner — is the
-        submission signal. Treating a visible spinner as proof would blind
-        steering entirely: a steer is typed while the previous turn is
-        already spinning, and its swallowed Enter would go unnoticed.
-
-        Matching the draft by its text does not work either: multi-line
-        pastes render as a collapsed "[Pasted text #N +M lines]" placeholder
-        containing none of the prompt.
+        The rendered screen is tried first because tmux lays the text out for
+        us (correct spacing); the append-only transcript is the fallback that
+        cannot go stale, reconstructed approximately from cursor motion. So:
+        good text when the screen is fresh, an answer at all when it is not.
         """
-        last = None
-        for line in self._capture().splitlines():
-            s = line.strip()
-            if s.startswith("❯"):
-                last = s
-        return last is not None and last.lstrip("❯").strip() != ""
+        deep = self._capture(_EXTRACT_SCROLLBACK)
+        if is_complete(deep, rid):
+            return extract_reply(deep, rid)
+        tail = self._pane_log_text(log_start)
+        if tail and is_complete(tail, rid):
+            return extract_reply(tail, rid)
+        return None
 
     def _submit(self) -> None:
-        # A lone Enter after a paste is sometimes swallowed by the TUI (seen
-        # in production repeatedly: the draft sits in the input box forever
-        # and ask() burns its whole timeout). Neither pane.log growth nor
-        # matching the draft text is reliable — the ground truth is the box
-        # itself: retry Enter until it is empty or a spinner shows. An extra
-        # Enter on an empty input is a no-op, so over-retrying is safe.
-        for _ in range(4):
+        # Submitting is confirmed by the transcript moving: accepting the
+        # input always produces output. The rendered box is NOT usable as
+        # proof — it goes stale and keeps showing text the TUI has already
+        # consumed, which would make this retry forever and (worse) risk
+        # double-submitting queued input. One retry covers a genuinely
+        # dropped Enter; beyond that, let ask()'s stall path handle it.
+        for _ in range(2):
+            before = self._pane_log_size()
             self._send_enter()
             for _ in range(6):
                 self._sleep(0.5)
-                if not self._input_box_holds_draft():
+                if self._pane_log_size() > before:
                     return
-        logger.warning("prompt did not leave the input box after retries")
+        logger.warning("submit produced no pane output — Enter may be ignored")
 
     def _send_prompt(self, prompt: str, rid: str, *, wrap: bool = True) -> None:
         # Markers are written INLINE (mid-sentence) so the input echo never
@@ -508,6 +537,9 @@ class ClaudeSession:
                 self._inflight.unlink(missing_ok=True)
                 return AskResult("logged_out")
 
+            # Offset BEFORE typing: the transcript from here on belongs to
+            # this turn only, so marker matching cannot see earlier turns.
+            turn_log_start = self._pane_log_size()
             self._send_prompt(prompt, rid, wrap=wrap)
 
             effective_stall = stall_timeout if stall_timeout is not None else self._stall_timeout
@@ -550,12 +582,10 @@ class ClaudeSession:
                     self._inflight.unlink(missing_ok=True)
                     return AskResult("logged_out")
                 if wrap:
-                    # Marker search uses the DEEP capture: a long answer can
-                    # push <<<R:rid>>> out of the classification window.
-                    deep = self._capture(_EXTRACT_SCROLLBACK)
-                    if is_complete(deep, rid):
+                    done = self._completed_reply(rid, turn_log_start)
+                    if done is not None:
                         self._inflight.unlink(missing_ok=True)
-                        return AskResult("ok", reply=extract_reply(deep, rid))
+                        return AskResult("ok", reply=done)
                 elif is_idle(cap):
                     idle_streak += 1
                     if idle_streak >= 2:
@@ -587,10 +617,12 @@ class ClaudeSession:
                 if self._clock() - last_active > current_stall:
                     # Last-chance check: Claude may have finished while pane.log
                     # was quiet (e.g. rate-limit overlay suppressed output).
-                    deep = self._capture(_EXTRACT_SCROLLBACK) if wrap else cap
-                    if wrap and is_complete(deep, rid):
+                    done = (
+                        self._completed_reply(rid, turn_log_start) if wrap else None
+                    )
+                    if done is not None:
                         self._inflight.unlink(missing_ok=True)
-                        return AskResult("ok", reply=extract_reply(deep, rid))
+                        return AskResult("ok", reply=done)
                     self._interrupt()
                     # leave inflight as an orphan/stuck signal for the watchdog
                     return AskResult("error", detail="session stalled (no active turn)")
