@@ -62,6 +62,13 @@ _PANE_HEIGHT = "50"
 # large counts like `-S -2000` return EMPTY on this TUI; a modest concrete
 # count works and includes scrollback (pane history ~2000 lines).
 _CAPTURE_SCROLLBACK = "-200"
+# Completion/extraction looks much deeper: a long answer plus post-turn
+# redraw chrome can push the opening <<<R:rid>>> line past 200 lines of
+# scrollback, after which a completed turn looks eternally unfinished and
+# ask() burns its whole stall window (seen in production 2026-08-03).
+# Classification stays on the narrow window — old dismissed menus deep in
+# history must not re-trigger state matches.
+_EXTRACT_SCROLLBACK = "-1000"
 
 
 @dataclass
@@ -157,9 +164,9 @@ class ClaudeSession:
             )
         return proc
 
-    def _capture(self) -> str:
+    def _capture(self, scrollback: str = _CAPTURE_SCROLLBACK) -> str:
         return self._tmux(
-            "capture-pane", "-t", self._target, "-p", "-S", _CAPTURE_SCROLLBACK
+            "capture-pane", "-t", self._target, "-p", "-S", scrollback
         ).stdout
 
     def _pane_log_size(self) -> int:
@@ -329,7 +336,10 @@ class ClaudeSession:
         model (steer/queue semantics) — VERIFY-LIVE per CLI version.
         """
         self._send_text(text)
-        self._send_enter()
+        # Verified submit: a steer whose Enter is swallowed silently LOSES
+        # the user's message (production 2026-08-03: it sat in the input box
+        # and contaminated the next turn's paste instead).
+        self._submit()
 
     def interrupt(self) -> None:
         """Stop the current response (TUI-native Escape, no lock).
@@ -389,51 +399,47 @@ class ClaudeSession:
         self._tmux("paste-buffer", "-t", self._target, "-b", buf, "-d")
         self._sleep(self._paste_settle)
 
-    def _draft_in_input_box(self, head: str) -> bool:
-        """True while the typed draft still sits in the input box.
+    def _input_box_holds_draft(self) -> bool:
+        """True while ANY draft sits in the input box.
 
-        The input box is the LAST '❯'-prefixed line on screen. After a real
-        submission that line is either gone (spinner phase) or an empty
-        prompt; the submitted echo of the same text lands ABOVE it in the
-        transcript, so matching only the last '❯' line distinguishes the two.
+        The input box is the LAST '❯'-prefixed line on screen; it stays
+        visible during a turn, so an empty box — not the spinner — is the
+        submission signal. Treating a visible spinner as proof would blind
+        steering entirely: a steer is typed while the previous turn is
+        already spinning, and its swallowed Enter would go unnoticed.
+
+        Matching the draft by its text does not work either: multi-line
+        pastes render as a collapsed "[Pasted text #N +M lines]" placeholder
+        containing none of the prompt.
         """
         last = None
         for line in self._capture().splitlines():
             s = line.strip()
             if s.startswith("❯"):
                 last = s
-        return last is not None and head in last
+        return last is not None and last.lstrip("❯").strip() != ""
 
-    def _submit(self, head: str) -> None:
+    def _submit(self) -> None:
         # A lone Enter after a paste is sometimes swallowed by the TUI (seen
-        # in production twice: the draft sits in the input box forever and
-        # ask() burns its whole timeout). pane.log growth is NOT a reliable
-        # signal — the paste echo flushes late and both masks a lost Enter
-        # and mimics one. The ground truth is the input box itself: verify
-        # the draft left it, retry Enter while it hasn't. An extra Enter on
-        # an empty input is a no-op, so over-retrying is safe.
+        # in production repeatedly: the draft sits in the input box forever
+        # and ask() burns its whole timeout). Neither pane.log growth nor
+        # matching the draft text is reliable — the ground truth is the box
+        # itself: retry Enter until it is empty or a spinner shows. An extra
+        # Enter on an empty input is a no-op, so over-retrying is safe.
         for _ in range(4):
             self._send_enter()
             for _ in range(6):
                 self._sleep(0.5)
-                if not self._draft_in_input_box(head):
+                if not self._input_box_holds_draft():
                     return
         logger.warning("prompt did not leave the input box after retries")
-
-    @staticmethod
-    def _head_of(text: str) -> str:
-        for line in text.splitlines():
-            line = line.strip()
-            if line:
-                return line[:30]
-        return ""
 
     def _send_prompt(self, prompt: str, rid: str, *, wrap: bool = True) -> None:
         # Markers are written INLINE (mid-sentence) so the input echo never
         # forms a line-anchored pair; only the model's answer does.
         if not wrap:
             self._send_text(prompt)
-            self._submit(self._head_of(prompt))
+            self._submit()
             return
         payload = (
             f"{prompt}\n\n"
@@ -441,7 +447,7 @@ class ClaudeSession:
             f"<<<R:{rid}>>> and a line containing only <<<E:{rid}>>>."
         )
         self._send_text(payload)
-        self._submit(self._head_of(prompt))
+        self._submit()
 
     # ── ask ──────────────────────────────────────────────────────────
 
@@ -544,9 +550,12 @@ class ClaudeSession:
                     self._inflight.unlink(missing_ok=True)
                     return AskResult("logged_out")
                 if wrap:
-                    if is_complete(cap, rid):
+                    # Marker search uses the DEEP capture: a long answer can
+                    # push <<<R:rid>>> out of the classification window.
+                    deep = self._capture(_EXTRACT_SCROLLBACK)
+                    if is_complete(deep, rid):
                         self._inflight.unlink(missing_ok=True)
-                        return AskResult("ok", reply=extract_reply(cap, rid))
+                        return AskResult("ok", reply=extract_reply(deep, rid))
                 elif is_idle(cap):
                     idle_streak += 1
                     if idle_streak >= 2:
@@ -578,9 +587,10 @@ class ClaudeSession:
                 if self._clock() - last_active > current_stall:
                     # Last-chance check: Claude may have finished while pane.log
                     # was quiet (e.g. rate-limit overlay suppressed output).
-                    if wrap and is_complete(cap, rid):
+                    deep = self._capture(_EXTRACT_SCROLLBACK) if wrap else cap
+                    if wrap and is_complete(deep, rid):
                         self._inflight.unlink(missing_ok=True)
-                        return AskResult("ok", reply=extract_reply(cap, rid))
+                        return AskResult("ok", reply=extract_reply(deep, rid))
                     self._interrupt()
                     # leave inflight as an orphan/stuck signal for the watchdog
                     return AskResult("error", detail="session stalled (no active turn)")
