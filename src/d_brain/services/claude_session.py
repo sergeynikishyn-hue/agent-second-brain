@@ -54,21 +54,23 @@ DEFAULT_STALL_TIMEOUT = 300  # no new pane bytes for this long ⇒ wedged
 # /process) — such turns are never steering targets for chat input.
 MAINT_PREFIX = "maint-"
 _PANE_WIDTH = "200"
-# Height 50 (not taller): the TUI draws its footer (idle ❯ / bypass line)
-# just below content, so on a tall pane the footer lands mid-screen with a
-# blank bottom — and chrome-region state detection misses it. At 50 the
-# footer sits near the bottom. Long replies are still captured via scrollback.
-_PANE_HEIGHT = "50"
-# Scrollback lines to capture. NOTE (verified live on tmux 3.6b): `-S -` and
-# large counts like `-S -2000` return EMPTY on this TUI; a modest concrete
-# count works and includes scrollback (pane history ~2000 lines).
+# THERE IS NO SCROLLBACK TO FALL BACK ON. The TUI runs on the alternate
+# screen, where tmux keeps no history: capture-pane can never return more
+# than the visible rows, whatever -S says (`history-limit` is equally moot).
+# So an answer taller than the pane loses its top — including the opening
+# <<<R:rid>>> line — and the turn can never be recognised as complete. That
+# is exactly what made every long reply (task lists!) fail with a session
+# error while short ones worked, 2026-08-03.
+#
+# Hence a pane tall enough to hold a whole answer. The older worry that a
+# tall pane would strand the footer mid-screen and break chrome detection
+# was re-tested live at 200x400: classify_state still reports READY.
+_PANE_HEIGHT = "400"
+# -S values below cannot reach past the screen (see above); they only bound
+# how much of it is returned. Keep classification on a narrow window so old
+# dismissed menus cannot re-trigger state matches, and read markers from the
+# full pane.
 _CAPTURE_SCROLLBACK = "-200"
-# Completion/extraction looks much deeper: a long answer plus post-turn
-# redraw chrome can push the opening <<<R:rid>>> line past 200 lines of
-# scrollback, after which a completed turn looks eternally unfinished and
-# ask() burns its whole stall window (seen in production 2026-08-03).
-# Classification stays on the narrow window — old dismissed menus deep in
-# history must not re-trigger state matches.
 _EXTRACT_SCROLLBACK = "-1000"
 # OSC (…BEL / …ST), two-byte ESC sequences, and CSI — enough to turn the raw
 # pane transcript back into readable text for marker matching.
@@ -267,7 +269,22 @@ class ClaudeSession:
             _PANE_HEIGHT,
             self._start_command(),
         )
-        # Bigger scrollback so long replies stay within capture range.
+        # `window-size latest` (the tmux default) re-derives the size from
+        # clients and silently overrode the -x/-y above, leaving the pane at
+        # the old 200x50. Pin it, then set the size explicitly.
+        self._tmux("set-option", "-t", self.session_name, "window-size", "manual")
+        self._tmux(
+            "resize-window",
+            "-t",
+            self.session_name,
+            "-x",
+            _PANE_WIDTH,
+            "-y",
+            _PANE_HEIGHT,
+        )
+        # Kept for any normal-screen output; it does NOT help the TUI itself,
+        # which lives on the alternate screen where tmux stores no history.
+        # Long replies fit because the pane is tall, not because of this.
         self._tmux("set-option", "-t", self.session_name, "history-limit", "50000")
         # Pre-create the transcript owner-only: `cat >>` appends and keeps
         # the mode, while letting tmux create it would use the server umask.
