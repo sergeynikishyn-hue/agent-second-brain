@@ -389,12 +389,28 @@ class ClaudeSession:
         self._tmux("paste-buffer", "-t", self._target, "-b", buf, "-d")
         self._sleep(self._paste_settle)
 
+    def _submit(self) -> None:
+        # A lone Enter right after a paste can be swallowed while the TUI is
+        # still settling (seen in production: the prompt sits in the input box
+        # forever and ask() burns its whole timeout). Submission is observable:
+        # pane.log grows when the turn starts. Verify that, and retry Enter a
+        # couple of times — an extra Enter on an empty input is a no-op, so
+        # retrying is safe even if the first one did land.
+        base = self._pane_log_size()
+        for _ in range(3):
+            self._send_enter()
+            for _ in range(6):
+                self._sleep(0.5)
+                if self._pane_log_size() > base:
+                    return
+        logger.warning("prompt may not have submitted (pane.log did not grow)")
+
     def _send_prompt(self, prompt: str, rid: str, *, wrap: bool = True) -> None:
         # Markers are written INLINE (mid-sentence) so the input echo never
         # forms a line-anchored pair; only the model's answer does.
         if not wrap:
             self._send_text(prompt)
-            self._send_enter()
+            self._submit()
             return
         payload = (
             f"{prompt}\n\n"
@@ -402,7 +418,7 @@ class ClaudeSession:
             f"<<<R:{rid}>>> and a line containing only <<<E:{rid}>>>."
         )
         self._send_text(payload)
-        self._send_enter()
+        self._submit()
 
     # ── ask ──────────────────────────────────────────────────────────
 
