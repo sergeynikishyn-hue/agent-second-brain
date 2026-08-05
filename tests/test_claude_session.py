@@ -551,6 +551,36 @@ def test_ask_dismisses_feedback_survey_instead_of_stalling(tmp_path, clock):
     assert not escapes, "stall interrupt fired instead of dismissing survey"
 
 
+def test_ask_cancels_blocking_choice_widget(tmp_path, clock):
+    # Production 2026-08-05: the model asked a clarifying question through
+    # AskUserQuestion, which waits for arrow keys nobody can press (the user
+    # is on Telegram). No spinner, no output → every message died on the
+    # 12-minute stall. The widget must be cancelled so the turn finishes.
+    choice = (
+        "● Роль в проекте\n"
+        "❯ 1. Внешний управляющий партнёр\n"
+        "  2. Финансовый советник собственника\n"
+        "  Enter to select · ↑/↓ to navigate · Esc to cancel\n"
+    )
+    fake = FakeTmux(
+        [READY, choice, choice, THINKING, _complete("rid00001")], exists=True
+    )
+    s = make_session(tmp_path, fake, clock)
+    res = s.ask("какое название роли зафиксировать")
+    assert res.status == "ok"
+    assert [c for c in fake.sent_keys() if c[-1] == "Escape"], (
+        "blocking widget was not cancelled"
+    )
+
+
+def test_start_command_denies_ask_user_question(tmp_path, clock):
+    # The interactive question tool must never be available to this session:
+    # it blocks on a keypress the remote user cannot give.
+    s = make_session(tmp_path, FakeTmux([READY], exists=True), clock)
+    cmd = s._start_command()
+    assert "--disallowed-tools" in cmd and "AskUserQuestion" in cmd
+
+
 def test_growing_pane_log_prevents_false_stall(tmp_path, clock):
     # Version-proof liveness: even if a future spinner format is
     # unrecognized, a transcript that keeps growing means the brain is

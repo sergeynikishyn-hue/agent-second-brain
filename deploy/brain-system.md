@@ -29,6 +29,13 @@ commands, control input): respond normally — no markers, no forced HTML.
 Mid-turn guidance steers the work you are already doing; it does not start a
 new reply.
 
+**Never wait for a keypress.** The human reads you in Telegram — nobody is at
+this terminal to press a key, so any interactive picker (AskUserQuestion, a
+numbered menu, "Enter to select") hangs the turn until the caller times out
+and the user sees a session error. When you need a decision, ASK IN TEXT
+inside the marker pair, listing the options, and end the turn: their next
+message is the answer.
+
 ## Durable memory (durable-state-first)
 
 Your conversation context is disposable: it may be auto-compacted or the

@@ -16,6 +16,7 @@ from d_brain.services.tmux_parse import (
     PaneState,
     classify_state,
     extract_reply,
+    has_blocking_choice,
     is_complete,
 )
 
@@ -486,3 +487,15 @@ def test_is_working_false_at_idle():
     from d_brain.services.tmux_parse import is_working
 
     assert not is_working("❯\n  ⏵⏵ bypass permissions on (shift+tab to cycle)\n")
+
+
+def test_has_blocking_choice():
+    # Any widget that waits on a keypress: the remote user cannot answer it.
+    widget = (
+        "● Какое название роли зафиксировать?\n"
+        "❯ 1. Внешний управляющий партнёр\n"
+        "  2. Финансовый советник собственника\n"
+        "  Enter to select · ↑/↓ to navigate · Esc to cancel\n"
+    )
+    assert has_blocking_choice(widget)
+    assert not has_blocking_choice("обычный ответ без меню\n❯\n")

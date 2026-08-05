@@ -37,6 +37,7 @@ from d_brain.services.tmux_parse import (
     PaneState,
     classify_state,
     extract_reply,
+    has_blocking_choice,
     has_survey_prompt,
     is_complete,
     is_idle,
@@ -45,6 +46,9 @@ from d_brain.services.tmux_parse import (
 )
 
 logger = logging.getLogger(__name__)
+
+# How many times one turn may cancel a blocking widget before giving up.
+_MAX_CHOICE_ESCAPES = 3
 
 Runner = Callable[..., subprocess.CompletedProcess]
 
@@ -241,7 +245,18 @@ class ClaudeSession:
     # ── lifecycle ────────────────────────────────────────────────────
 
     def _start_command(self) -> str:
-        parts = [shlex.quote(self.claude_bin), "--dangerously-skip-permissions"]
+        # AskUserQuestion renders a menu and waits for arrow keys + Enter. The
+        # human is on Telegram, not at this terminal, so the turn would sit
+        # there silently until ask() times out (production 2026-08-05: every
+        # message failed with a 12-minute "session error" once the model
+        # started asking clarifying questions). Denied at launch so the model
+        # asks in text, which actually reaches the user.
+        parts = [
+            shlex.quote(self.claude_bin),
+            "--dangerously-skip-permissions",
+            "--disallowed-tools",
+            "AskUserQuestion",
+        ]
         if self.mcp_config:
             parts += ["--mcp-config", shlex.quote(str(self.mcp_config))]
         if self.system_prompt_file:
@@ -564,6 +579,7 @@ class ClaudeSession:
             last_log_size = self._pane_log_size()
             deadline = self._clock() + timeout
             idle_streak = 0
+            choice_escapes = 0
             _rate_limited_since: float | None = None
             _recovered_from_rate_limit = False
             # Grace period before giving up on a rate-limited mid-turn.
@@ -616,6 +632,27 @@ class ClaudeSession:
                 # turn. Dismiss it (0) and never count it as a stall.
                 if has_survey_prompt(cap):
                     self._tmux("send-keys", "-t", self._target, "0")
+                    last_active = self._clock()
+                    self._sleep(self._poll_interval)
+                    continue
+
+                # A widget waiting on a keypress nobody can give (the user is
+                # on Telegram). AskUserQuestion is denied at launch, so this
+                # is the belt-and-braces path for any other modal: cancel it
+                # (Esc) and let the turn finish in text. Bounded — if
+                # cancelling does not take, fall through to the stall path
+                # rather than pressing Esc forever.
+                if has_blocking_choice(cap) and choice_escapes < _MAX_CHOICE_ESCAPES:
+                    choice_escapes += 1
+                    logger.warning(
+                        "blocking choice widget on screen — cancelling (%d/%d)",
+                        choice_escapes,
+                        _MAX_CHOICE_ESCAPES,
+                    )
+                    # Escape, never C-c: the widget's own footer says "Esc to
+                    # cancel", and a C-c landing on an idle prompt starts the
+                    # double-C-c exit that would kill the whole session.
+                    self.interrupt()
                     last_active = self._clock()
                     self._sleep(self._poll_interval)
                     continue

@@ -201,6 +201,25 @@ def has_survey_prompt(text: str) -> bool:
     return bool(_SURVEY_RE.search(text))
 
 
+# The footer every blocking selection widget renders. AskUserQuestion — the
+# model asking the human to pick an option — is the one seen in production,
+# but any future modal that waits on a keypress shows this same line.
+_CHOICE_RE = re.compile(r"Enter to select.*(?:navigate|cancel)")
+
+
+def has_blocking_choice(text: str) -> bool:
+    """True iff a widget waits for a keypress the remote user cannot give.
+
+    The human talks to this session over Telegram, so nobody is at the
+    terminal to press a key: the widget shows no spinner and prints nothing,
+    which reads exactly like a hang. Production 2026-08-05: the model asked a
+    clarifying question via AskUserQuestion and every message failed with a
+    12-minute "session error". Detected so the caller can cancel it and let
+    the model ask in text instead.
+    """
+    return bool(_CHOICE_RE.search(text))
+
+
 def is_idle(text: str) -> bool:
     """True iff the session sits at an idle input prompt (no active turn).
 
