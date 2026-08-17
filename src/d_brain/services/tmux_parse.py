@@ -117,7 +117,14 @@ _RATE_RE = re.compile(
     re.I,
 )
 _LOGGED_OUT_RE = re.compile(
-    r"invalid api key|please run /login|logged out|please log ?in|"
+    # "run /login" (not just "PLEASE run /login") and "not logged in" are the
+    # wordings Claude Code actually used on 2026-08-17: the status line read
+    # "Not logged in · Run /login" and the old pattern missed it, so the pane
+    # classified as READY. The bot then sent prompts into a session that could
+    # not answer, and the user got a 12-minute "Ошибка сессии" instead of
+    # "нужен повторный вход" — and the watchdog never raised its login alert.
+    r"invalid api key|run /login|logged out|not logged in|login expired|"
+    r"please log ?in|"
     r"authentication (failed|required|expired)|session expired|"
     # First-run onboarding screens (fresh CLAUDE_CONFIG_DIR): they need a
     # human, restarts won't help — alert like a logout, don't kill.

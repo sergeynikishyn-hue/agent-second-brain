@@ -280,6 +280,23 @@ def test_classify_logged_out():
     assert classify_state(LOGGED_OUT_CAPTURE) == PaneState.LOGGED_OUT
 
 
+def test_classify_expired_login_status_line():
+    # Verbatim from production 2026-08-17. The old pattern required "PLEASE
+    # run /login", so this classified as READY: the bot kept feeding prompts
+    # into a session that could not answer and the user saw "Ошибка сессии"
+    # instead of "нужен повторный вход".
+    pane = (
+        "● Login expired · Please run /login\n"
+        "─────────────────────────\n"
+        "                       Not logged in · Run /login\n"
+        "─────────────────────────\n"
+        "❯ \n"
+        "─────────────────────────\n"
+        "  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← for agents\n"
+    )
+    assert classify_state(pane) == PaneState.LOGGED_OUT
+
+
 def test_classify_unknown_on_empty():
     assert classify_state("") == PaneState.UNKNOWN
 
