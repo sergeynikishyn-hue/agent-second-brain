@@ -7,7 +7,6 @@
 
 ## ✅ Must Do
 - Реклама: пустить трафик на страницу с кнопкой «забрать шаблон» вместо главной (p1, вернулось в работу 19.08) → [[thoughts/tasks/reklama-kampaniya-peresmotr-srochno]]
-- Сайт: обновить шаблоны для раздаточных материалов (p1, с 05.08) → [[thoughts/tasks/sayt-obnovit-shablony-razdatka]]
 - Протестить BotHelp на «поднятие разговора» (due 20.08) → [[thoughts/tasks/protestit-bothelp-podnyatie-razgovora]]
 
 ## 📋 Should Do
@@ -24,6 +23,8 @@ _Не зафиксировано_
 _Не определено_
 
 ## Заметки
+Закрыто 20.08: сайт — обновлены шаблоны раздаточных материалов → [[thoughts/tasks/sayt-obnovit-shablony-razdatka]] (висело с 31.07).
+
 Закрыто 19.08: отмена подписки PLAUD, заявки на сентябрьские мероприятия «Аномалии», КП Роману по управленческому учёту → [[thoughts/tasks/roman-svyazatsya-upravlenchesky-uchet]] (ждём его ответа; если тишина — мягкий follow-up в начале недели).
 
 Открытые хвосты без задач: замер конверсии рекламы до/после смены посадочной.
