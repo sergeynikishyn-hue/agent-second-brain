@@ -45,6 +45,11 @@ Curated knowledge that persists across sessions. Part of the 3-layer memory arch
 - **ПитЛайн** → `clients/ПитЛайн.md`
 - **АллоХа** — клиент, счёт+отчёт до 20.07 → `clients/АллоХа.md`
 
+## Pipeline (лиды)
+
+- **Роман** — автосервис/СТО, управленческий учёт: КП отправлено 19.08, ждём ответа → [[thoughts/tasks/roman-svyazatsya-upravlenchesky-uchet]]
+- **Александр** — заявка с сайта 24.08 на «Разбор экономики бизнеса», 1-е сообщение отправлено, ждём ответа → [[thoughts/tasks/2026-08-24-aleksandr-lid-razbor-ekonomiki]]
+
 ## Goals 2026
 
 **Тема года:** Рост  
