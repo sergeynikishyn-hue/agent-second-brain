@@ -29,7 +29,7 @@ tier: active
 - Проверить «кейсы» на сайте → [[thoughts/tasks/sayt-proverit-keysy]]
 - Дизайн сайта в чате → [[thoughts/tasks/sayt-dizayn-v-chate]]
 - Мягкий follow-up Роману, если тишина по КП → [[thoughts/tasks/roman-svyazatsya-upravlenchesky-uchet]]
-- Лид Александр (заявка с сайта 24.08, «разбор экономики»): дождаться ответа, при тишине к 26–27.08 — мягкий follow-up → [[thoughts/tasks/2026-08-24-aleksandr-lid-razbor-ekonomiki]]
+- Лид Александр (заявка с сайта 24.08, «разбор экономики»): от созвона отказался — квалифицировать перепиской, 2–3 вопроса по одному → [[thoughts/tasks/2026-08-24-aleksandr-lid-razbor-ekonomiki]]
 - Прописать точки роста для ПитЛайн и обсудить с Сергеем (срок не назван) → [[thoughts/tasks/2026-08-22-pitlayn-tochki-rosta]]
 - Найти специалиста по Яндекс Директу и заказать внешнюю проверку кампании (срок не назван) → [[thoughts/tasks/2026-08-22-naiti-direktologa-proverit-kampaniyu]]
 
