@@ -36,6 +36,8 @@ tier: active
 ## 📅 Встречи и даты
 - **9 сентября (ср)** — своё мероприятие в Крымской аномалии → [[thoughts/tasks/2026-08-23-anomaliya-vstrecha-1-dekada-sentyabrya]]
 - **23 сентября (ср)** — Seller Fest, решено ехать → [[thoughts/tasks/2026-09-23-seller-fest]]
+- **10 октября (сб)** — слёт, партнёрская программа «покажите сервис» → [[thoughts/tasks/2026-08-24-partnerskaya-programma-soobschestvo-kalendar]]
+- **17 декабря (чт)** — Awards, там же → [[thoughts/tasks/2026-08-24-partnerskaya-programma-soobschestvo-kalendar]]
 
 ## 🚫 Не делаю на этой неделе
 - Не разгонять бюджет поиска в Директе — самый дорогой способ купить заявку (вывод 21.08 → [[thoughts/projects/2026-08-21-reklama-varianty-kpd]])
