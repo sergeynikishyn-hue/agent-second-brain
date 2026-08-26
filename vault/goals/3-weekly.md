@@ -2,7 +2,7 @@
 type: weekly
 period: 2026-W35
 updated: 2026-08-25
-relevance: 1.0
+relevance: 0.985
 tier: active
 ---
 
