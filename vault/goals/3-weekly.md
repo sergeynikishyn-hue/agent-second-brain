@@ -23,7 +23,6 @@ tier: active
 - Реклама: пустить трафик на страницу с кнопкой «забрать шаблон» вместо главной (p1, тянется с 08.08) → [[thoughts/tasks/reklama-kampaniya-peresmotr-srochno]]
 
 ## 📋 Should Do
-- Протестить BotHelp на «поднятие разговора» (просрочено с 20.08) → [[thoughts/tasks/protestit-bothelp-podnyatie-razgovora]]
 - Настроить почту в amoCRM → [[thoughts/tasks/amocrm-nastroit-pochtu]]
 - Протокол Евгения → [[thoughts/tasks/protokol-evgeniy]]
 - Собрать фото для страницы «о себе» → [[thoughts/tasks/sayt-foto-stranitsa-o-sebe]]
@@ -41,6 +40,7 @@ tier: active
 - **17 декабря (чт)** — Awards, там же → [[thoughts/tasks/2026-08-24-partnerskaya-programma-soobschestvo-kalendar]]
 
 ## 🚫 Не делаю на этой неделе
+- Тест BotHelp на «поднятие разговора» — снят с работы 27.08 по решению Сергея, вернуть при следующем движении по дожиму лидов → [[thoughts/tasks/protestit-bothelp-podnyatie-razgovora]]
 - Не разгонять бюджет поиска в Директе — самый дорогой способ купить заявку (вывод 21.08 → [[thoughts/projects/2026-08-21-reklama-varianty-kpd]])
 
 ## Заметки
