@@ -1,8 +1,8 @@
 ---
 type: weekly
 period: 2026-W35
-updated: 2026-08-27
-relevance: 1.0
+updated: 2026-08-28
+relevance: 0.985
 tier: active
 ---
 
@@ -21,6 +21,7 @@ tier: active
 - Рассылка по мероприятию в Крымской аномалии 9 сентября: чат капитанов + личные сообщения + общий чат сообщества (p1, с пн 24.08) → [[thoughts/tasks/rassylka-krymskaya-anomaliya-09-09]]
 - Написать в понедельник объявление в чат Крымской аномалии: встреча в 1-й декаде сентября, тема «как продукт влияет на прибыль» (p1, 24.08) → [[thoughts/tasks/2026-08-23-anomaliya-vstrecha-1-dekada-sentyabrya]]
 - Реклама: пустить трафик на страницу с кнопкой «забрать шаблон» вместо главной (p1, тянется с 08.08) → [[thoughts/tasks/reklama-kampaniya-peresmotr-srochno]]
+- **Входящий лид с сайта 28.08** (оборот 2 млн₽, трек «Разбор экономики»): трубку не берёт — отправить 1-е ответное письмо, текст готов (p1) → [[thoughts/tasks/2026-08-28-lid-sayt-razbor-ekonomiki-2mln]]
 
 ## 📋 Should Do
 - Настроить почту в amoCRM → [[thoughts/tasks/amocrm-nastroit-pochtu]]
