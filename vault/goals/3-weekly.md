@@ -25,6 +25,7 @@ tier: active
 - **Входящий лид с сайта 28.08** (оборот 2 млн₽, трек «Разбор экономики»): трубку не берёт — отправить 1-е ответное письмо, текст готов (p1) → [[thoughts/tasks/2026-08-28-lid-sayt-razbor-ekonomiki-2mln]]
 
 ## 📋 Should Do
+- amoCRM, воронка «Диагностика/Разборы», этап «Новая сделка»: прописать приветственное сообщение для лида из Telegram — сейчас пусто (p2, поставлено 01.09, срок не назван) → [[thoughts/tasks/2026-09-01-amocrm-privetstvie-telegram-novaya-sdelka]]
 - Настроить почту в amoCRM → [[thoughts/tasks/amocrm-nastroit-pochtu]]
 - Протокол Евгения → [[thoughts/tasks/protokol-evgeniy]]
 - Собрать фото для страницы «о себе» → [[thoughts/tasks/sayt-foto-stranitsa-o-sebe]]
