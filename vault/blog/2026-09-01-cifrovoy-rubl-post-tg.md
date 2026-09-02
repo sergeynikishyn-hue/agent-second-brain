@@ -6,7 +6,7 @@ tags: [telegram, kontent, cifrovoy-rubl, ekvayring]
 status: draft
 created: 2026-09-01
 updated: 2026-09-01
-relevance: 1.0
+relevance: 0.985
 tier: active
 ---
 
