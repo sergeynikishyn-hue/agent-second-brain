@@ -30,15 +30,15 @@ tier: active
 - **Лид с сайта 02.09** (оборот 2–20 млн, «Финансовый советник»): дозвон не прошёл — отправить первое сообщение в Telegram, текст готов (p1) → [[thoughts/tasks/2026-09-02-lid-sayt-finansovyy-razbor]]
 
 ## 📋 Should Do
-- Настроить почту в amoCRM → [[thoughts/tasks/amocrm-nastroit-pochtu]]
+- ✅ Настроить почту в amoCRM (закрыто 03.09) → [[thoughts/tasks/amocrm-nastroit-pochtu]]
 - Протокол Евгения → [[thoughts/tasks/protokol-evgeniy]]
-- Собрать фото для страницы «о себе» → [[thoughts/tasks/sayt-foto-stranitsa-o-sebe]]
-- Проверить «кейсы» на сайте → [[thoughts/tasks/sayt-proverit-keysy]]
-- Дизайн сайта в чате → [[thoughts/tasks/sayt-dizayn-v-chate]]
+- ✅ Фото для страницы «о себе» (закрыто 03.09) → [[thoughts/tasks/sayt-foto-stranitsa-o-sebe]]
+- ✅ Проверить «кейсы» на сайте (закрыто 03.09) → [[thoughts/tasks/sayt-proverit-keysy]]
+- ✅ Дизайн сайта в чате (закрыто 03.09) → [[thoughts/tasks/sayt-dizayn-v-chate]]
 - Мягкий follow-up Роману, если тишина по КП → [[thoughts/tasks/roman-svyazatsya-upravlenchesky-uchet]]
 - Лид Александр (заявка с сайта 24.08, «разбор экономики»): от созвона отказался — квалифицировать перепиской, 2–3 вопроса по одному → [[thoughts/tasks/2026-08-24-aleksandr-lid-razbor-ekonomiki]]
 - Прописать точки роста для ПитЛайн и обсудить с Сергеем (срок не назван) → [[thoughts/tasks/2026-08-22-pitlayn-tochki-rosta]]
-- Найти специалиста по Яндекс Директу и заказать внешнюю проверку кампании (срок не назван) → [[thoughts/tasks/2026-08-22-naiti-direktologa-proverit-kampaniyu]]
+- ✅ Внешняя проверка кампании / директолог (закрыто 03.09) → [[thoughts/tasks/2026-08-22-naiti-direktologa-proverit-kampaniyu]]
 
 ## 📅 Встречи и даты
 - **9 сентября (ср)** — своё мероприятие в Крымской аномалии → [[thoughts/tasks/2026-08-23-anomaliya-vstrecha-1-dekada-sentyabrya]]
