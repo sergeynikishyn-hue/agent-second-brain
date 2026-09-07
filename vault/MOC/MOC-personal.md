@@ -1,6 +1,8 @@
 ---
-description: "MOC — Personal domain index (165 cards)"
+description: MOC — Personal domain index (165 cards)
 type: moc
+relevance: 0.1
+tier: archive
 ---
 
 # MOC — Personal
