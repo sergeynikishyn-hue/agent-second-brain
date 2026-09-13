@@ -6,8 +6,8 @@ tags: [telegram, kontent, cifrovoy-rubl, ekvayring]
 status: draft
 created: 2026-09-01
 updated: 2026-09-01
-relevance: 0.91
-tier: active
+relevance: 0.82
+tier: warm
 ---
 
 # Пост ТГ: цифровой рубль - экономия, которой не будет
