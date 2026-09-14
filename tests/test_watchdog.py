@@ -19,17 +19,12 @@ class FakeSession:
         state=PaneState.READY,
         recover_ok=True,
         working=False,
-        expiring=False,
     ):
         self._healthy = healthy
         self.state = state
         self._recover_ok = recover_ok
         self.working = working
-        self.expiring = expiring
         self.recovered = 0
-
-    def login_expiring(self) -> bool:
-        return self.expiring
 
     def is_healthy(self) -> bool:
         return self._healthy
@@ -47,7 +42,15 @@ class FakeSession:
         return self._recover_ok
 
 
-def make_wd(tmp_path, session, *, disk_free=10_000_000_000, clock=None, alerts=None):
+def make_wd(
+    tmp_path,
+    session,
+    *,
+    disk_free=10_000_000_000,
+    clock=None,
+    alerts=None,
+    login_expiry=None,
+):
     clock = clock if clock is not None else {"now": 1000.0}
     return Watchdog(
         session,
@@ -58,6 +61,7 @@ def make_wd(tmp_path, session, *, disk_free=10_000_000_000, clock=None, alerts=N
         min_disk_bytes=500_000_000,
         stall_threshold=300.0,
         alert_cooldown=3600.0,
+        login_expiry_fn=lambda: login_expiry,
     )
 
 
@@ -88,16 +92,47 @@ def test_rate_limited_is_not_killed(tmp_path):
 
 
 def test_login_expiring_alerts_once_without_restart(tmp_path):
-    # 2026-09-14: "login expires in 1 day · run /login to renew" while fully
-    # logged in. Must warn ahead of the night cutoff, never restart, and not
-    # repeat the alert on every 15s tick.
-    sess = FakeSession(state=PaneState.READY, expiring=True)
+    # The refresh key lapses within a day: warn ahead with the time, never
+    # restart, and don't repeat the alert on every 15s tick.
+    sess = FakeSession(state=PaneState.READY)
     alerts = []
-    wd = make_wd(tmp_path, sess, alerts=alerts)
+    wd = make_wd(tmp_path, sess, alerts=alerts, login_expiry=1000.0 + 3 * 3600)
     assert wd.check_once() == "login_expiring"
     assert wd.check_once() == "login_expiring"
     assert sess.recovered == 0
     assert len(alerts) == 1 and "истекает" in alerts[0]
+
+
+def test_login_far_from_expiry_is_healthy(tmp_path):
+    # 2026-09-14: after a re-login the key runs a month — no alert, whatever
+    # the pane text says (the pane is no longer consulted for expiry).
+    alerts = []
+    wd = make_wd(
+        tmp_path, FakeSession(), alerts=alerts, login_expiry=1000.0 + 30 * 86400
+    )
+    assert wd.check_once() == "healthy"
+    assert alerts == []
+
+
+def test_login_lapsed_alerts_without_restart(tmp_path):
+    sess = FakeSession(state=PaneState.READY)
+    alerts = []
+    wd = make_wd(tmp_path, sess, alerts=alerts, login_expiry=500.0)
+    assert wd.check_once() == "login_lapsed"
+    assert sess.recovered == 0
+    assert len(alerts) == 1 and "истёк" in alerts[0]
+
+
+def test_read_login_expiry(tmp_path):
+    from d_brain.services.watchdog import read_login_expiry
+
+    assert read_login_expiry(tmp_path) is None  # no file
+    (tmp_path / ".credentials.json").write_text(
+        '{"claudeAiOauth": {"refreshTokenExpiresAt": 1791999402622}}'
+    )
+    assert read_login_expiry(tmp_path) == 1791999402.622
+    (tmp_path / ".credentials.json").write_text("{}")
+    assert read_login_expiry(tmp_path) is None
 
 
 def test_logged_out_alerts_without_restart(tmp_path):

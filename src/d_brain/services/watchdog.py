@@ -8,6 +8,8 @@ decides one of:
 - recovered_dead   → session gone → force_recover + alert
 - rate_limited     → subscription limit hit → do NOT kill; wait it out
 - logged_out       → auth lost → alert (needs re-login); do NOT kill
+- login_lapsed     → OAuth refresh key already expired → alert; do NOT kill
+- login_expiring   → refresh key lapses within a day → alert ahead; do NOT kill
 - recovered_hung   → wedged → force_recover + alert
 - recover_deferred → wedged but a live request holds the lock → retry next tick
 - healthy          → nothing to do
@@ -23,10 +25,13 @@ Alerts are debounced: a level-triggered fault (disk/logged-out) alerts once
 per cooldown, and re-fires after the session returns to a good state.
 """
 
+import json
 import logging
+import os
 import shutil
 import time
 from collections.abc import Callable
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -40,6 +45,25 @@ DEFAULT_STALL_THRESHOLD = 300.0  # 5 min stuck without visible work ⇒ wedged
 DEFAULT_MIN_DISK = 500_000_000  # 500 MB
 DEFAULT_ALERT_COOLDOWN = 3600.0  # first re-alert of a persistent fault: 1h
 DEFAULT_ALERT_COOLDOWN_MAX = 12 * 3600.0  # back-off cap (doubles 1h→2h→…→12h)
+DEFAULT_LOGIN_WARN_AHEAD = 24 * 3600.0  # warn a day before the login lapses
+
+
+def read_login_expiry(config_dir: Path | None = None) -> float | None:
+    """Epoch seconds when the Claude OAuth refresh key lapses, or None.
+
+    Read from the credentials file, NOT the pane: on 2026-09-14 the pane-based
+    detector fired on the assistant's own reply quoting the renewal banner.
+    The access token refreshes itself; only the refresh key needs a human.
+    """
+    base = config_dir or Path(
+        os.environ.get("CLAUDE_CONFIG_DIR") or Path.home() / ".claude"
+    )
+    try:
+        data = json.loads((base / ".credentials.json").read_text())
+        ms = data["claudeAiOauth"]["refreshTokenExpiresAt"]
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+    return ms / 1000 if isinstance(ms, (int, float)) else None
 
 _SERVICEABLE = {
     PaneState.READY,
@@ -63,6 +87,8 @@ class Watchdog:
         min_disk_bytes: int = DEFAULT_MIN_DISK,
         alert_cooldown: float = DEFAULT_ALERT_COOLDOWN,
         alert_cooldown_max: float = DEFAULT_ALERT_COOLDOWN_MAX,
+        login_expiry_fn: Callable[[], float | None] = read_login_expiry,
+        login_warn_ahead: float = DEFAULT_LOGIN_WARN_AHEAD,
     ) -> None:
         self.session = session
         self.runtime_dir = Path(runtime_dir)
@@ -77,6 +103,8 @@ class Watchdog:
         self._min_disk = min_disk_bytes
         self._alert_cooldown = alert_cooldown
         self._alert_cooldown_max = alert_cooldown_max
+        self._login_expiry_fn = login_expiry_fn
+        self._login_warn_ahead = login_warn_ahead
         self._inflight = self.runtime_dir / "inflight"
         self._status = self.runtime_dir / "STATUS.md"
         self._last_alert_key: str | None = None
@@ -167,18 +195,30 @@ class Watchdog:
         if state == PaneState.READY:
             self._inflight.unlink(missing_ok=True)  # clear any orphan marker
 
-        # Still logged in, but the refresh key is about to lapse: warn hours
-        # ahead so the re-login happens before the night-time cutoff, instead
-        # of every job dying at 03:00 (2026-09-14). Not _note_good(): that
-        # would re-arm this alert on the next 15s tick and spam the chat.
-        if self.session.login_expiring():
-            self._maybe_alert(
-                "login_expiring",
-                "🔑 Вход в Claude истекает в ближайшие часы — обнови заранее "
-                "(dbrain login), иначе ночью остановятся бот и задания.",
-            )
-            self._write_status("login_expiring")
-            return "login_expiring"
+        # The refresh key lapses on a fixed date (monthly); after that every
+        # bot, cron job and the evening pipeline stop until a human re-logs
+        # in. Warn a day ahead with the exact time. Not _note_good() while
+        # warning: that would re-arm the alert on the next 15s tick.
+        expiry = self._login_expiry_fn()
+        if expiry is not None:
+            left = expiry - self._clock()
+            when = datetime.fromtimestamp(expiry).strftime("%d.%m %H:%M")
+            if left <= 0:
+                self._maybe_alert(
+                    "login_lapsed",
+                    f"🔑 Вход в Claude истёк ({when}) — нужен повторный вход "
+                    "(dbrain login).",
+                )
+                self._write_status("login_lapsed")
+                return "login_lapsed"
+            if left < self._login_warn_ahead:
+                self._maybe_alert(
+                    "login_expiring",
+                    f"🔑 Вход в Claude истекает {when} — обнови заранее "
+                    "(dbrain login), иначе остановятся бот и задания.",
+                )
+                self._write_status("login_expiring")
+                return "login_expiring"
 
         self._note_good()
         self._write_status("healthy")

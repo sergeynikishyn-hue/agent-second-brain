@@ -130,7 +130,8 @@ _LOGGED_OUT_RE = re.compile(
     # restart, the bot classified the healthy session as LOGGED_OUT and sent
     # "нужен повторный вход" while the evening pipeline was in fact running.
     # The negative lookahead keeps the real logout wordings and skips the
-    # renewal hint. Detecting the hint itself is has_login_expiring() below.
+    # renewal hint. The expiry itself is read from the credentials file by the
+    # watchdog, not from the pane (quoted chat text would trigger it).
     r"invalid api key|run /login(?! to renew)|logged out|not logged in|"
     r"login expired|"
     r"please log ?in|"
@@ -234,19 +235,6 @@ def has_blocking_choice(text: str) -> bool:
     the model ask in text instead.
     """
     return bool(_CHOICE_RE.search(text))
-
-
-# "⚠ Your login expires in 1 day · run /login to renew": still logged in, but
-# the OAuth refresh key is about to lapse. When it does (2026-09-14: 23:08 for
-# the key, 03:00 for the session) every bot, cron job and the evening pipeline
-# stop answering until a human re-logs in — so this deserves an alert of its
-# own, hours ahead, not a false LOGGED_OUT and not silence.
-_LOGIN_EXPIRING_RE = re.compile(r"login expires in .*run /login to renew", re.I)
-
-
-def has_login_expiring(text: str) -> bool:
-    """True iff Claude Code warns that the login is about to expire."""
-    return bool(_LOGIN_EXPIRING_RE.search(text))
 
 
 def is_idle(text: str) -> bool:

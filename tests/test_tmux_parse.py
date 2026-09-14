@@ -17,7 +17,6 @@ from d_brain.services.tmux_parse import (
     classify_state,
     extract_reply,
     has_blocking_choice,
-    has_login_expiring,
     is_complete,
 )
 
@@ -311,8 +310,6 @@ def test_login_renewal_warning_is_not_logged_out():
         "  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← for agents\n"
     )
     assert classify_state(pane) == PaneState.READY
-    assert has_login_expiring(pane)
-    assert not has_login_expiring("● Login expired · Please run /login\n❯\n")
 
 
 def test_classify_unknown_on_empty():
