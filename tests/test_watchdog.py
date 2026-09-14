@@ -13,13 +13,23 @@ from d_brain.services.watchdog import Watchdog
 
 class FakeSession:
     def __init__(
-        self, *, healthy=True, state=PaneState.READY, recover_ok=True, working=False
+        self,
+        *,
+        healthy=True,
+        state=PaneState.READY,
+        recover_ok=True,
+        working=False,
+        expiring=False,
     ):
         self._healthy = healthy
         self.state = state
         self._recover_ok = recover_ok
         self.working = working
+        self.expiring = expiring
         self.recovered = 0
+
+    def login_expiring(self) -> bool:
+        return self.expiring
 
     def is_healthy(self) -> bool:
         return self._healthy
@@ -75,6 +85,19 @@ def test_rate_limited_is_not_killed(tmp_path):
     wd = make_wd(tmp_path, sess)
     assert wd.check_once() == "rate_limited"
     assert sess.recovered == 0
+
+
+def test_login_expiring_alerts_once_without_restart(tmp_path):
+    # 2026-09-14: "login expires in 1 day · run /login to renew" while fully
+    # logged in. Must warn ahead of the night cutoff, never restart, and not
+    # repeat the alert on every 15s tick.
+    sess = FakeSession(state=PaneState.READY, expiring=True)
+    alerts = []
+    wd = make_wd(tmp_path, sess, alerts=alerts)
+    assert wd.check_once() == "login_expiring"
+    assert wd.check_once() == "login_expiring"
+    assert sess.recovered == 0
+    assert len(alerts) == 1 and "истекает" in alerts[0]
 
 
 def test_logged_out_alerts_without_restart(tmp_path):

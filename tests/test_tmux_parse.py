@@ -17,6 +17,7 @@ from d_brain.services.tmux_parse import (
     classify_state,
     extract_reply,
     has_blocking_choice,
+    has_login_expiring,
     is_complete,
 )
 
@@ -295,6 +296,23 @@ def test_classify_expired_login_status_line():
         "  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← for agents\n"
     )
     assert classify_state(pane) == PaneState.LOGGED_OUT
+
+
+def test_login_renewal_warning_is_not_logged_out():
+    # Verbatim from production 2026-09-14 after the 21:00 restart. The session
+    # was fully logged in and running the evening pipeline, yet "run /login"
+    # inside the renewal hint matched the logout pattern: the user got a false
+    # "нужен повторный вход" and the evening report was never delivered.
+    pane = (
+        "⚠ Your login expires in 1 day · run /login to renew\n"
+        "─────────────────────────\n"
+        "❯ \n"
+        "─────────────────────────\n"
+        "  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← for agents\n"
+    )
+    assert classify_state(pane) == PaneState.READY
+    assert has_login_expiring(pane)
+    assert not has_login_expiring("● Login expired · Please run /login\n❯\n")
 
 
 def test_classify_unknown_on_empty():

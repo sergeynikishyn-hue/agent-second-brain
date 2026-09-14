@@ -166,6 +166,20 @@ class Watchdog:
 
         if state == PaneState.READY:
             self._inflight.unlink(missing_ok=True)  # clear any orphan marker
+
+        # Still logged in, but the refresh key is about to lapse: warn hours
+        # ahead so the re-login happens before the night-time cutoff, instead
+        # of every job dying at 03:00 (2026-09-14). Not _note_good(): that
+        # would re-arm this alert on the next 15s tick and spam the chat.
+        if self.session.login_expiring():
+            self._maybe_alert(
+                "login_expiring",
+                "🔑 Вход в Claude истекает в ближайшие часы — обнови заранее "
+                "(dbrain login), иначе ночью остановятся бот и задания.",
+            )
+            self._write_status("login_expiring")
+            return "login_expiring"
+
         self._note_good()
         self._write_status("healthy")
         return "healthy"

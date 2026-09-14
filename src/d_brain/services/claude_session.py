@@ -38,6 +38,7 @@ from d_brain.services.tmux_parse import (
     classify_state,
     extract_reply,
     has_blocking_choice,
+    has_login_expiring,
     has_survey_prompt,
     is_complete,
     is_idle,
@@ -369,6 +370,10 @@ class ClaudeSession:
     def is_working(self) -> bool:
         """True iff the pane shows an active turn (for the watchdog)."""
         return is_working(self._capture())
+
+    def login_expiring(self) -> bool:
+        """True iff the pane warns the login is about to expire (for the watchdog)."""
+        return has_login_expiring(self._capture())
 
     def force_recover(self) -> bool:
         """Watchdog entry point: take the lock non-blocking; if free, kill and
