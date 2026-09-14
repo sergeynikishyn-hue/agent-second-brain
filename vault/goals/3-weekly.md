@@ -2,8 +2,8 @@
 type: weekly
 period: 2026-W35
 updated: 2026-09-06
-relevance: 0.895
-tier: active
+relevance: 0.88
+tier: warm
 ---
 
 # Неделя 24–28 августа 2026
