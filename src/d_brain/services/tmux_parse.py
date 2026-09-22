@@ -294,3 +294,38 @@ def classify_state(text: str) -> PaneState:
     if _STARTING_RE.search(text):
         return PaneState.STARTING
     return PaneState.UNKNOWN
+
+
+# The input box: the prompt line(s) between the last two horizontal rules
+# above the footer. Searched over a wider tail than the chrome — a long
+# single-line draft wraps across many screen lines.
+_BOX_RULE_RE = re.compile(r"^\s*─{10,}")
+_BOX_TAIL_LINES = 60
+
+
+def input_box_text(text: str) -> str | None:
+    """Text sitting in the input box, "" if empty, None if no box is shown.
+
+    None means "cannot tell" (a modal, a menu, a blank pane) — callers must
+    not press keys on that basis.
+    """
+    lines = text.splitlines()[-_BOX_TAIL_LINES:]
+    rules = [i for i, ln in enumerate(lines) if _BOX_RULE_RE.match(ln)]
+    if len(rules) < 2:
+        return None
+    top, bottom = rules[-2], rules[-1]
+    body = "\n".join(lines[top + 1 : bottom]).strip()
+    if body.startswith("❯"):
+        body = body[1:].strip()
+    return body
+
+
+# Claude Code updates itself in the background and then keeps a banner on
+# screen until restarted. The banner repaints forever, so the transcript
+# grows with no turn behind it — it blinds every pane.log-growth signal.
+_UPDATE_BANNER_RE = re.compile(r"Update installed\s*·\s*Restart to update")
+
+
+def has_update_banner(text: str) -> bool:
+    """True iff the "restart to update" banner is in the chrome."""
+    return bool(_UPDATE_BANNER_RE.search(_chrome(text)))

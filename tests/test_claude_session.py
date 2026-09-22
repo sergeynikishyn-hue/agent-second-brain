@@ -615,3 +615,102 @@ def test_static_pane_log_and_no_spinner_still_stalls(tmp_path, clock):
     res = s.ask("x", timeout=600)
     assert res.status == "error"
     assert "stall" in (res.detail or "").lower()
+
+
+# ── submit verification (production 2026-09-22 23:47) ──────────────────
+
+_RULE = "─" * 20
+
+
+def _box(draft: str) -> str:
+    return (
+        f"{_RULE}\n❯ {draft}\n{_RULE}\n"
+        "  ⏵⏵ bypass permissions on (shift+tab to cycle)\n"
+    )
+
+
+def test_submit_retries_enter_while_draft_sits_in_box_despite_log_growth(
+    tmp_path, clock
+):
+    # The "Restart to update" banner repainted forever, so pane.log grew on
+    # its own; the old check took that as "Enter accepted" and the prompt sat
+    # in the box until the stall timeout. The box must be the judge.
+    log = tmp_path / ".dbrain" / "pane.log"
+    log.parent.mkdir(parents=True, exist_ok=True)
+    log.write_text("")
+    stuck = _box("Ты в работе?") + "✔ Update installed · Restart to update\n"
+    fake = FakeTmux([stuck] * 7 + [READY], exists=True)  # 6 polls per Enter
+    s = make_session(tmp_path, fake, clock)
+
+    def banner_sleep(seconds: float) -> None:
+        clock["now"] += seconds
+        with log.open("a") as f:
+            f.write("✔ Update installed · Restart to update\n")
+
+    s._sleep = banner_sleep
+    s._submit()
+    assert fake.enter_count() >= 2, "Enter was not retried for a stuck draft"
+
+
+def test_submit_trusts_spinner_in_transcript_over_stale_box(tmp_path, clock):
+    # The rendered box can go stale and keep showing a consumed draft; the
+    # spinner appearing in the transcript proves the turn started.
+    log = tmp_path / ".dbrain" / "pane.log"
+    log.parent.mkdir(parents=True, exist_ok=True)
+    log.write_text("")
+    fake = FakeTmux([_box("старый текст")], exists=True)
+    s = make_session(tmp_path, fake, clock)
+
+    def spin_sleep(seconds: float) -> None:
+        clock["now"] += seconds
+        with log.open("a") as f:
+            f.write("✻ Working… (3s · ↓ 10 tokens)\n")
+
+    s._sleep = spin_sleep
+    s._submit()
+    assert fake.enter_count() == 1
+
+
+def test_steer_ignores_spinner_and_retries_stuck_draft(tmp_path, clock):
+    # During a steer the turn is already spinning — the spinner proves
+    # nothing; only the box emptying does.
+    log = tmp_path / ".dbrain" / "pane.log"
+    log.parent.mkdir(parents=True, exist_ok=True)
+    log.write_text("")
+    fake = FakeTmux([_box("уточнение")] * 7 + [READY], exists=True)
+    s = make_session(tmp_path, fake, clock)
+
+    def spin_sleep(seconds: float) -> None:
+        clock["now"] += seconds
+        with log.open("a") as f:
+            f.write("✻ Working… (3s · ↓ 10 tokens)\n")
+
+    s._sleep = spin_sleep
+    s.steer("уточнение")
+    assert fake.enter_count() >= 2
+
+
+def test_invisible_characters_are_stripped_before_paste(tmp_path, clock):
+    # Claude Code strips zero-width marks itself and then waits for a second
+    # Enter ("review and press Enter to send"); strip them first.
+    fake = FakeTmuxText([READY], exists=True)
+    s = make_session(tmp_path, fake, clock)
+    s._send_text("При​вет﻿")
+    assert fake.texts == ["Привет"]
+
+
+def test_ask_restarts_pane_when_update_is_installed(tmp_path, clock):
+    banner = READY + "  ✔ Update installed · Restart to update\n"
+
+    class Killable(FakeTmux):
+        def __call__(self, args, **kwargs):  # noqa: ANN001
+            if args[1:2] == ["kill-session"]:
+                self.exists = False
+            return super().__call__(args, **kwargs)
+
+    fake = Killable([banner, READY, READY, _complete("rid00001")], exists=True)
+    s = make_session(tmp_path, fake, clock)
+    res = s.ask("привет")
+    assert res.status == "ok"
+    assert "kill-session" in fake.sent_subcommands()
+    assert "new-session" in fake.sent_subcommands()

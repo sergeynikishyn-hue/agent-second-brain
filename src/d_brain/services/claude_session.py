@@ -39,6 +39,8 @@ from d_brain.services.tmux_parse import (
     extract_reply,
     has_blocking_choice,
     has_survey_prompt,
+    has_update_banner,
+    input_box_text,
     is_complete,
     is_idle,
     is_working,
@@ -85,6 +87,10 @@ _ANSI_RE = re.compile(
 # spaces, so stripping every escape glues the text together ("Активныезадачи").
 # Collapse forward-motion to a single space before the general strip.
 _ANSI_ADVANCE_RE = re.compile(rb"\x1b\[[0-9]*[GC]")
+# Zero-width / bidi marks (Telegram forwards carry them). Claude Code strips
+# them from a paste and then wants a SECOND Enter ("Removed N invisible
+# characters · review and press Enter to send") — production 2026-09-23.
+_INVISIBLE_RE = re.compile("[\u200b-\u200f\u202a-\u202e\u2060-\u2064\ufeff]")
 
 
 @dataclass
@@ -402,8 +408,9 @@ class ClaudeSession:
         self._send_text(text)
         # Verified submit: a steer whose Enter is swallowed silently LOSES
         # the user's message (production 2026-08-03: it sat in the input box
-        # and contaminated the next turn's paste instead).
-        self._submit()
+        # and contaminated the next turn's paste instead). The turn is
+        # already spinning, so only the box can prove this Enter landed.
+        self._submit(starts_turn=False)
 
     def interrupt(self) -> None:
         """Stop the current response (TUI-native Escape, no lock).
@@ -456,6 +463,7 @@ class ClaudeSession:
         # Stream the payload to `load-buffer -` over stdin; passing it as an
         # argv element trips tmux's "set-buffer: command too long" on long
         # prompts and the text is silently dropped (session then stalls).
+        text = _INVISIBLE_RE.sub("", text)
         if not text:
             return  # 0 bytes ⇒ no buffer ⇒ paste-buffer would fail `no buffer`
         buf = f"dbrain_{uuid.uuid4().hex[:6]}"
@@ -479,21 +487,27 @@ class ClaudeSession:
             return extract_reply(tail, rid)
         return None
 
-    def _submit(self) -> None:
-        # Submitting is confirmed by the transcript moving: accepting the
-        # input always produces output. The rendered box is NOT usable as
-        # proof — it goes stale and keeps showing text the TUI has already
-        # consumed, which would make this retry forever and (worse) risk
-        # double-submitting queued input. One retry covers a genuinely
-        # dropped Enter; beyond that, let ask()'s stall path handle it.
-        for _ in range(2):
+    def _submit(self, *, starts_turn: bool = True) -> None:
+        # History: both single signals failed in production. pane.log growth
+        # is faked by anything that repaints (the paste echo flushing late;
+        # 2026-09-22 the "Restart to update" banner) — the draft sat in the
+        # box and the turn died on the stall timeout. The rendered box alone
+        # goes stale and can show text already consumed. So: accepted when
+        # the box is empty OR (for a new turn) the transcript since this
+        # Enter shows the working spinner — a repaint never draws that.
+        # Otherwise press Enter again; an Enter on an empty box is a no-op,
+        # so a stale box costs at most a few harmless Enters (bounded).
+        for _ in range(4):
             before = self._pane_log_size()
             self._send_enter()
             for _ in range(6):
                 self._sleep(0.5)
-                if self._pane_log_size() > before:
+                box = input_box_text(self._capture())
+                if box is None or box == "":
                     return
-        logger.warning("submit produced no pane output — Enter may be ignored")
+                if starts_turn and is_working(self._pane_log_text(before)):
+                    return
+        logger.warning("draft still in the input box after retries")
 
     def _send_prompt(self, prompt: str, rid: str, *, wrap: bool = True) -> None:
         # Markers are written INLINE (mid-sentence) so the input echo never
@@ -553,7 +567,21 @@ class ClaudeSession:
                     return AskResult("logged_out", detail=str(exc))
                 return AskResult("error", detail=f"session start failed: {exc}")
 
-            pre = classify_state(self._capture())
+            pre_cap = self._capture()
+            if has_update_banner(pre_cap) and not is_working(pre_cap):
+                # Idle between turns is the only safe moment to restart onto
+                # the installed version (context is disposable by design).
+                logger.info("Claude Code update installed — restarting pane")
+                self._tmux("kill-session", "-t", self.session_name)
+                self._ready_flag.unlink(missing_ok=True)
+                try:
+                    self._ensure_locked()
+                except Exception as exc:  # noqa: BLE001
+                    logger.error("restart after update failed: %s", exc)
+                    self._inflight.unlink(missing_ok=True)
+                    return AskResult("error", detail=f"session start failed: {exc}")
+                pre_cap = self._capture()
+            pre = classify_state(pre_cap)
             if pre == PaneState.RATE_LIMITED:
                 # The rate-limit banner can stay in the pane after the limit
                 # resets (nothing clears it until a new prompt is sent). Try
